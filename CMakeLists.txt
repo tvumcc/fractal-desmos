@@ -6,9 +6,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(equation_to_julia LANGUAGES C CXX)
 
 add_subdirectory(lib/webgpu)
+if (NOT EMSCRIPTEN)
+	add_subdirectory(lib/glfw)
+else()
+	add_library(glfw INTERFACE)
+	target_link_options(glfw INTERFACE -sUSE_GLFW=3)
+endif()
+add_subdirectory(lib/glfw3webgpu)
 include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/include 
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/lib/glfw/include 
     ${CMAKE_CURRENT_SOURCE_DIR}/build/_deps/webgpu-backend-wgpu-src/include/webgpu
+	${CMAKE_CURRENT_SOURCE_DIR}/lib/glfw3webgpu
 )
 
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
@@ -17,9 +26,10 @@ add_executable(${CMAKE_PROJECT_NAME}
 	${SRC_FILES}
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE webgpu)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE webgpu glfw glfw3webgpu)
 target_copy_webgpu_binaries(${CMAKE_PROJECT_NAME})
 
 if (EMSCRIPTEN)
 	set_target_properties(App PROPERTIES SUFFIX ".html")	
+	target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -sASYNCIFY)
 endif()
