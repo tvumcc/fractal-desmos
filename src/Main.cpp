@@ -1,5 +1,5 @@
-#define WEBGPU_BACKEND_WGPU
 #define WEBGPU_CPP_IMPLEMENTATION
+#define WEBGPU_BACKEND_WGPU
 #include <webgpu/webgpu.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -13,6 +13,26 @@
 #include <iostream>
 #include <format>
 #include <vector>
+
+const char* shader_source = R"(
+@vertex
+fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> @builtin(position) vec4f {
+    var p = vec2f(0.0, 0.0);
+    if (in_vertex_index == 0u) {
+        p = vec2f(-0.5, -0.5);
+    } else if (in_vertex_index == 1u) {
+        p = vec2f(0.5, -0.5);
+    } else {
+        p = vec2f(0.0, 0.5);
+    }
+    return vec4f(p, 0.0, 1.0);
+}
+
+@fragment
+fn fs_main() -> @location(0) vec4f {
+    return vec4f(0.0, 0.4, 1.0, 1.0);
+}
+)";
 
 WGPUAdapter request_adapter_sync(WGPUInstance instance, const WGPURequestAdapterOptions* options) {
     struct UserData {
@@ -108,7 +128,7 @@ public:
 
         device = request_device_sync(adapter, &device_descriptor);
 
-        WGPUTextureFormat surface_format = wgpuSurfaceGetPreferredFormat(surface, adapter);
+        surface_format = wgpuSurfaceGetPreferredFormat(surface, adapter);
         WGPUSurfaceConfiguration config = {};
         config.nextInChain = nullptr;
         config.width = 800;
@@ -153,10 +173,13 @@ public:
         wgpuQueueSubmit(queue, 1, &command);
         wgpuCommandBufferRelease(command);
 
+        init_pipeline();
+
         return true;
     } 
 
     void terminate() {
+        wgpuRenderPipelineRelease(pipeline);
         wgpuSurfaceUnconfigure(surface);
         wgpuSurfaceRelease(surface);
         wgpuQueueRelease(queue);
@@ -181,7 +204,7 @@ public:
         render_pass_color_attachment.resolveTarget = nullptr;
         render_pass_color_attachment.loadOp = WGPULoadOp_Clear;
         render_pass_color_attachment.storeOp = WGPUStoreOp_Store;
-        render_pass_color_attachment.clearValue = WGPUColor{0.9, 0.1, 0.1, 1.0};
+        render_pass_color_attachment.clearValue = WGPUColor{0.9, 0.1, 0.2, 1.0};
     #ifndef WEBGPU_BACKEND_WGPU
         render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
     #endif
@@ -194,6 +217,8 @@ public:
         render_pass_descriptor.timestampWrites = nullptr;
 
         WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(encoder, &render_pass_descriptor);
+        wgpuRenderPassEncoderSetPipeline(render_pass, pipeline);
+        wgpuRenderPassEncoderDraw(render_pass, 3, 1, 0, 0);
         wgpuRenderPassEncoderEnd(render_pass);
         wgpuRenderPassEncoderRelease(render_pass);
 
@@ -221,11 +246,86 @@ public:
     bool is_running() {
         return !glfwWindowShouldClose(window);
     }
+
+    void init_pipeline() {
+        WGPUShaderModuleDescriptor shader_descriptor = {};
+#ifdef WEBGPU_BACKEND_WGPU
+        shader_descriptor.hintCount = 0;
+        shader_descriptor.hints = nullptr;
+#endif
+
+        WGPUShaderModuleWGSLDescriptor shader_code_descriptor = {};
+        shader_code_descriptor.chain.next = nullptr; 
+        shader_code_descriptor.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;        
+        shader_descriptor.nextInChain = &shader_code_descriptor.chain;
+        shader_code_descriptor.code = shader_source;
+
+        WGPUShaderModule shader_module = wgpuDeviceCreateShaderModule(device, &shader_descriptor);
+
+        WGPURenderPipelineDescriptor pipeline_descriptor = {};
+        pipeline_descriptor.nextInChain = nullptr;
+
+        // Vertex pipeline state
+        pipeline_descriptor.vertex.bufferCount = 0;
+        pipeline_descriptor.vertex.buffers = nullptr;
+        pipeline_descriptor.vertex.module = shader_module;
+        pipeline_descriptor.vertex.entryPoint = "vs_main";
+        pipeline_descriptor.vertex.constantCount = 0;
+        pipeline_descriptor.vertex.constants = nullptr;
+
+        // Primitive pipeline state
+        pipeline_descriptor.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        pipeline_descriptor.primitive.stripIndexFormat = WGPUIndexFormat_Undefined;
+        pipeline_descriptor.primitive.frontFace = WGPUFrontFace_CCW;
+        pipeline_descriptor.primitive.cullMode = WGPUCullMode_None;
+
+        // Fragment shader state
+        WGPUFragmentState fragment_state = {};
+        fragment_state.module = shader_module;
+        fragment_state.entryPoint = "fs_main";
+        fragment_state.constantCount = 0;
+        fragment_state.constants = nullptr;
+
+        // Blending state
+        WGPUBlendState blend_state = {};
+        blend_state.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+        blend_state.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+        blend_state.color.operation = WGPUBlendOperation_Add;
+        blend_state.alpha.srcFactor = WGPUBlendFactor_Zero;
+        blend_state.alpha.dstFactor = WGPUBlendFactor_One;
+        blend_state.alpha.operation = WGPUBlendOperation_Add;
+        
+        WGPUColorTargetState color_target = {};
+        color_target.format = surface_format;
+        color_target.blend = &blend_state;
+        color_target.writeMask = WGPUColorWriteMask_All;
+
+        fragment_state.targetCount = 1;
+        fragment_state.targets = &color_target;
+        pipeline_descriptor.fragment = &fragment_state;
+
+        // Depth/Stencil State
+        pipeline_descriptor.depthStencil = nullptr;
+
+        // Multi-sampling
+        pipeline_descriptor.multisample.count = 1;
+        pipeline_descriptor.multisample.mask = ~0u;
+        pipeline_descriptor.multisample.alphaToCoverageEnabled = false;
+
+        // Pipeline Layout (memory layout for buffers/textures)
+        pipeline_descriptor.layout = nullptr;
+
+        pipeline = wgpuDeviceCreateRenderPipeline(device, &pipeline_descriptor);
+        wgpuShaderModuleRelease(shader_module);
+    }
 private:
     GLFWwindow* window;
     WGPUDevice device;
     WGPUQueue queue;
     WGPUSurface surface;
+    WGPUTextureFormat surface_format = WGPUTextureFormat_Undefined;
+    WGPURenderPipeline pipeline;
+
 
     std::pair<WGPUSurfaceTexture, WGPUTextureView> get_next_surface_view_data() {
         WGPUSurfaceTexture surface_texture;
