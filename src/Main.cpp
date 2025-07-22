@@ -13,6 +13,7 @@
 #include <iostream>
 #include <format>
 #include <vector>
+#include <array>
 
 const char* shader_source = R"(
 struct VertexInput {
@@ -25,17 +26,26 @@ struct VertexOutput {
     @location(0) color: vec3f,
 };
 
+struct MyUniforms {
+    color: vec4f,
+    time: f32,
+};
+
+@group(0) @binding(0) var<uniform> uMyUniforms: MyUniforms;
+
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.position = vec4f(in.position, 0.0, 1.0);
+    out.position = vec4f(in.position.x, in.position.y + (0.5 * sin(uMyUniforms.time) + 0.5), 0.0, 1.0);
     out.color = in.color;
     return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    return vec4f(in.color, 1.0);
+    let color = in.color * uMyUniforms.color.rgb;
+    let linear_color = pow(color, vec3f(2.2));
+    return vec4f(linear_color, 1.0);
 }
 )";
 
@@ -126,7 +136,6 @@ public:
         WGPUSupportedLimits supported_limits = {};
         supported_limits.nextInChain = nullptr;
         wgpuAdapterGetLimits(adapter, &supported_limits);
-        std::cout << "adapter.maxVertexAttributes: " << supported_limits.limits.maxVertexAttributes << "\n";
 
         WGPUDeviceDescriptor device_descriptor = {};
         device_descriptor.deviceLostCallback = [](WGPUDeviceLostReason reason, char const *message, void * /* pUserData */) {
@@ -135,9 +144,9 @@ public:
                 std::cout << " (" << message << ")";
             std::cout << std::endl;
         };
+
         WGPURequiredLimits required_limits = get_required_limits(adapter);
         device_descriptor.requiredLimits = &required_limits;
-
         device = request_device_sync(adapter, &device_descriptor);
 
         surface_format = wgpuSurfaceGetPreferredFormat(surface, adapter);
@@ -172,6 +181,7 @@ public:
 
         init_pipeline();
         init_buffers();
+        init_bind_groups();
 
         return true;
     } 
@@ -179,6 +189,10 @@ public:
     void terminate() {
         wgpuBufferRelease(vertex_buffer);
         wgpuBufferRelease(index_buffer);
+        wgpuBufferRelease(uniform_buffer);
+        wgpuPipelineLayoutRelease(layout);
+        wgpuBindGroupLayoutRelease(bind_group_layout);
+        wgpuBindGroupRelease(bind_group);
 
         wgpuRenderPipelineRelease(pipeline);
         wgpuSurfaceUnconfigure(surface);
@@ -191,9 +205,11 @@ public:
 
     void main_loop() {
         glfwPollEvents();
+        float time = static_cast<float>(glfwGetTime());
+        wgpuQueueWriteBuffer(queue, uniform_buffer, offsetof(MyUniforms, time), &time, sizeof(float));
+
         auto [surface_texture, target_view] = get_next_surface_view_data();
         if (!target_view) return;
-
 
         WGPUCommandEncoderDescriptor encoder_descriptor = {};
         encoder_descriptor.nextInChain = nullptr;
@@ -217,10 +233,12 @@ public:
         render_pass_descriptor.depthStencilAttachment = nullptr;
         render_pass_descriptor.timestampWrites = nullptr;
 
+
         WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(encoder, &render_pass_descriptor);
         wgpuRenderPassEncoderSetPipeline(render_pass, pipeline);
         wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, vertex_buffer, 0, wgpuBufferGetSize(vertex_buffer));
         wgpuRenderPassEncoderSetIndexBuffer(render_pass, index_buffer, WGPUIndexFormat_Uint32, 0, wgpuBufferGetSize(index_buffer));
+        wgpuRenderPassEncoderSetBindGroup(render_pass, 0, bind_group, 0, nullptr);
         wgpuRenderPassEncoderDrawIndexed(render_pass, index_count, 1, 0, 0, 0);
         wgpuRenderPassEncoderEnd(render_pass);
         wgpuRenderPassEncoderRelease(render_pass);
@@ -331,7 +349,26 @@ public:
         pipeline_descriptor.multisample.alphaToCoverageEnabled = false;
 
         // Pipeline Layout (memory layout for buffers/textures)
-        pipeline_descriptor.layout = nullptr;
+        WGPUBindGroupLayoutEntry binding_layout = {};
+        set_default(binding_layout);
+        binding_layout.binding = 0;
+        binding_layout.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        binding_layout.buffer.type = WGPUBufferBindingType_Uniform;
+        binding_layout.buffer.minBindingSize = sizeof(MyUniforms);
+
+        WGPUBindGroupLayoutDescriptor bind_group_layout_descriptor = {};
+        bind_group_layout_descriptor.nextInChain = nullptr;
+        bind_group_layout_descriptor.entryCount = 1;
+        bind_group_layout_descriptor.entries = &binding_layout;
+        bind_group_layout = wgpuDeviceCreateBindGroupLayout(device, &bind_group_layout_descriptor);
+
+        WGPUPipelineLayoutDescriptor layout_descriptor = {};
+        layout_descriptor.nextInChain = nullptr;
+        layout_descriptor.bindGroupLayoutCount = 1;
+        layout_descriptor.bindGroupLayouts = &bind_group_layout;
+        layout = wgpuDeviceCreatePipelineLayout(device, &layout_descriptor);
+
+        pipeline_descriptor.layout = layout;
 
         pipeline = wgpuDeviceCreateRenderPipeline(device, &pipeline_descriptor);
         wgpuShaderModuleRelease(shader_module);
@@ -365,6 +402,31 @@ public:
         index_buffer = wgpuDeviceCreateBuffer(device, &buffer_descriptor);
 
         wgpuQueueWriteBuffer(queue, index_buffer, 0, index_data.data(), buffer_descriptor.size);
+
+        buffer_descriptor.size = sizeof(MyUniforms);
+        buffer_descriptor.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform;
+        uniform_buffer = wgpuDeviceCreateBuffer(device, &buffer_descriptor);
+
+        MyUniforms uniforms;
+        uniforms.time = 1.0f;
+        uniforms.color = {0.0f, 1.0f, 0.0f, 1.0f};
+        wgpuQueueWriteBuffer(queue, uniform_buffer, 0, &uniforms, sizeof(MyUniforms));
+    }
+
+    void init_bind_groups() {
+        WGPUBindGroupEntry binding = {};
+        binding.nextInChain = nullptr;
+        binding.binding = 0;
+        binding.buffer = uniform_buffer;
+        binding.offset = 0;
+        binding.size = sizeof(MyUniforms);
+
+        WGPUBindGroupDescriptor bind_group_descriptor = {};
+        bind_group_descriptor.nextInChain = nullptr;
+        bind_group_descriptor.layout = bind_group_layout;
+        bind_group_descriptor.entryCount = 1;
+        bind_group_descriptor.entries = &binding;
+        bind_group = wgpuDeviceCreateBindGroup(device, &bind_group_descriptor);
     }
 private:
     GLFWwindow* window;
@@ -378,7 +440,21 @@ private:
     WGPUBuffer index_buffer;
     uint32_t index_count;
 
-    void set_default_limits(WGPULimits& limits) {
+    WGPUBuffer uniform_buffer;
+
+    WGPUPipelineLayout layout;
+    WGPUBindGroupLayout bind_group_layout;
+    WGPUBindGroup bind_group;
+
+    struct MyUniforms {
+        std::array<float, 4> color;   
+        float time;
+        float _padding[3];
+    };
+
+    static_assert(sizeof(MyUniforms) % 16 == 0);
+
+    void set_default_limits(WGPULimits& limits) const {
         limits.maxTextureDimension1D = WGPU_LIMIT_U32_UNDEFINED;
         limits.maxTextureDimension2D = WGPU_LIMIT_U32_UNDEFINED;
         limits.maxTextureDimension3D = WGPU_LIMIT_U32_UNDEFINED;
@@ -413,12 +489,32 @@ private:
         limits.maxComputeWorkgroupsPerDimension = WGPU_LIMIT_U32_UNDEFINED;
     }
 
-    WGPURequiredLimits get_required_limits(WGPUAdapter adapter) {
+    void set_default(WGPUBindGroupLayoutEntry &bindingLayout) {
+        bindingLayout.buffer.nextInChain = nullptr;
+        bindingLayout.buffer.type = WGPUBufferBindingType_Undefined;
+        bindingLayout.buffer.hasDynamicOffset = false;
+
+        bindingLayout.sampler.nextInChain = nullptr;
+        bindingLayout.sampler.type = WGPUSamplerBindingType_Undefined;
+
+        bindingLayout.storageTexture.nextInChain = nullptr;
+        bindingLayout.storageTexture.access = WGPUStorageTextureAccess_Undefined;
+        bindingLayout.storageTexture.format = WGPUTextureFormat_Undefined;
+        bindingLayout.storageTexture.viewDimension = WGPUTextureViewDimension_Undefined;
+
+        bindingLayout.texture.nextInChain = nullptr;
+        bindingLayout.texture.multisampled = false;
+        bindingLayout.texture.sampleType = WGPUTextureSampleType_Undefined;
+        bindingLayout.texture.viewDimension = WGPUTextureViewDimension_Undefined;
+    }
+
+
+    WGPURequiredLimits get_required_limits(WGPUAdapter adapter) const {
         WGPUSupportedLimits supported_limits;
         supported_limits.nextInChain = nullptr;
         wgpuAdapterGetLimits(adapter, &supported_limits);
 
-        WGPURequiredLimits required_limits;
+        WGPURequiredLimits required_limits = {};
         set_default_limits(required_limits.limits);
 
         required_limits.limits.maxVertexAttributes = 2;
@@ -426,6 +522,10 @@ private:
         required_limits.limits.maxBufferSize = 6 * 5 * sizeof(float);
         required_limits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
         required_limits.limits.maxInterStageShaderComponents = 3;
+
+        required_limits.limits.maxBindGroups = 1;
+        required_limits.limits.maxUniformBuffersPerShaderStage = 1;
+        required_limits.limits.maxUniformBufferBindingSize = 16 * 4;
 
         required_limits.limits.minUniformBufferOffsetAlignment = supported_limits.limits.minUniformBufferOffsetAlignment;
         required_limits.limits.minStorageBufferOffsetAlignment = supported_limits.limits.minStorageBufferOffsetAlignment;
