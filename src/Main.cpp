@@ -15,22 +15,27 @@
 #include <vector>
 
 const char* shader_source = R"(
+struct VertexInput {
+    @location(0) position: vec2f,
+    @location(1) color: vec3f,
+};
+
+struct VertexOutput {
+    @builtin(position) position: vec4f,
+    @location(0) color: vec3f,
+};
+
 @vertex
-fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> @builtin(position) vec4f {
-    var p = vec2f(0.0, 0.0);
-    if (in_vertex_index == 0u) {
-        p = vec2f(-0.5, -0.5);
-    } else if (in_vertex_index == 1u) {
-        p = vec2f(0.5, -0.5);
-    } else {
-        p = vec2f(0.0, 0.5);
-    }
-    return vec4f(p, 0.0, 1.0);
+fn vs_main(in: VertexInput) -> VertexOutput {
+    var out: VertexOutput;
+    out.position = vec4f(in.position, 0.0, 1.0);
+    out.color = in.color;
+    return out;
 }
 
 @fragment
-fn fs_main() -> @location(0) vec4f {
-    return vec4f(0.0, 0.4, 1.0, 1.0);
+fn fs_main(in: VertexOutput) -> @location(0) vec4f {
+    return vec4f(in.color, 1.0);
 }
 )";
 
@@ -118,6 +123,11 @@ public:
         adapter_options.compatibleSurface = surface;
         WGPUAdapter adapter = request_adapter_sync(instance, &adapter_options);
 
+        WGPUSupportedLimits supported_limits = {};
+        supported_limits.nextInChain = nullptr;
+        wgpuAdapterGetLimits(adapter, &supported_limits);
+        std::cout << "adapter.maxVertexAttributes: " << supported_limits.limits.maxVertexAttributes << "\n";
+
         WGPUDeviceDescriptor device_descriptor = {};
         device_descriptor.deviceLostCallback = [](WGPUDeviceLostReason reason, char const *message, void * /* pUserData */) {
             std::cout << "Device lost: reason " << reason;
@@ -125,6 +135,8 @@ public:
                 std::cout << " (" << message << ")";
             std::cout << std::endl;
         };
+        WGPURequiredLimits required_limits = get_required_limits(adapter);
+        device_descriptor.requiredLimits = &required_limits;
 
         device = request_device_sync(adapter, &device_descriptor);
 
@@ -158,27 +170,16 @@ public:
         };
         wgpuQueueOnSubmittedWorkDone(queue, on_queue_work_done, nullptr);
 
-        WGPUCommandEncoderDescriptor encoder_descriptor = {};
-        encoder_descriptor.nextInChain = nullptr;
-        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device, &encoder_descriptor);
-        
-        wgpuCommandEncoderInsertDebugMarker(encoder, "Do this");
-        wgpuCommandEncoderInsertDebugMarker(encoder, "Do that");
-
-        WGPUCommandBufferDescriptor command_buffer_descriptor = {};
-        command_buffer_descriptor.nextInChain = nullptr;
-        WGPUCommandBuffer command = wgpuCommandEncoderFinish(encoder, &command_buffer_descriptor);
-        wgpuCommandEncoderRelease(encoder);
-
-        wgpuQueueSubmit(queue, 1, &command);
-        wgpuCommandBufferRelease(command);
-
         init_pipeline();
+        init_buffers();
 
         return true;
     } 
 
     void terminate() {
+        wgpuBufferRelease(vertex_buffer);
+        wgpuBufferRelease(index_buffer);
+
         wgpuRenderPipelineRelease(pipeline);
         wgpuSurfaceUnconfigure(surface);
         wgpuSurfaceRelease(surface);
@@ -218,7 +219,9 @@ public:
 
         WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(encoder, &render_pass_descriptor);
         wgpuRenderPassEncoderSetPipeline(render_pass, pipeline);
-        wgpuRenderPassEncoderDraw(render_pass, 3, 1, 0, 0);
+        wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, vertex_buffer, 0, wgpuBufferGetSize(vertex_buffer));
+        wgpuRenderPassEncoderSetIndexBuffer(render_pass, index_buffer, WGPUIndexFormat_Uint32, 0, wgpuBufferGetSize(index_buffer));
+        wgpuRenderPassEncoderDrawIndexed(render_pass, index_count, 1, 0, 0, 0);
         wgpuRenderPassEncoderEnd(render_pass);
         wgpuRenderPassEncoderRelease(render_pass);
 
@@ -266,8 +269,23 @@ public:
         pipeline_descriptor.nextInChain = nullptr;
 
         // Vertex pipeline state
-        pipeline_descriptor.vertex.bufferCount = 0;
-        pipeline_descriptor.vertex.buffers = nullptr;
+        WGPUVertexBufferLayout vertex_buffer_layout = {};
+        std::vector<WGPUVertexAttribute> vertex_attributes(2);
+        vertex_attributes[0].shaderLocation = 0;
+        vertex_attributes[0].format = WGPUVertexFormat_Float32x2;
+        vertex_attributes[0].offset = 0;
+
+        vertex_attributes[1].shaderLocation = 1;
+        vertex_attributes[1].format = WGPUVertexFormat_Float32x3;
+        vertex_attributes[1].offset = 2 * sizeof(float);
+
+        vertex_buffer_layout.attributeCount = static_cast<uint32_t>(vertex_attributes.size());
+        vertex_buffer_layout.attributes = vertex_attributes.data();
+        vertex_buffer_layout.arrayStride = 5 * sizeof(float);
+        vertex_buffer_layout.stepMode = WGPUVertexStepMode_Vertex;
+
+        pipeline_descriptor.vertex.bufferCount = 1;
+        pipeline_descriptor.vertex.buffers = &vertex_buffer_layout;
         pipeline_descriptor.vertex.module = shader_module;
         pipeline_descriptor.vertex.entryPoint = "vs_main";
         pipeline_descriptor.vertex.constantCount = 0;
@@ -318,6 +336,36 @@ public:
         pipeline = wgpuDeviceCreateRenderPipeline(device, &pipeline_descriptor);
         wgpuShaderModuleRelease(shader_module);
     }
+
+    void init_buffers() {
+        std::vector<float> vertex_data = {
+            -0.5, -0.5,   1.0, 0.0, 0.0,
+            +0.5, -0.5,   0.0, 1.0, 0.0,
+            +0.5, +0.5,   0.0, 0.0, 1.0,
+            -0.5, +0.5,   1.0, 1.0, 0.0
+        };
+
+        std::vector<uint32_t> index_data = {
+            0, 1, 2,
+            0, 2, 3
+        };
+
+        index_count = static_cast<uint32_t>(index_data.size());
+
+        WGPUBufferDescriptor buffer_descriptor = {};
+        buffer_descriptor.nextInChain = nullptr;
+        buffer_descriptor.size = vertex_data.size() * sizeof(float);
+        buffer_descriptor.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Vertex;
+        buffer_descriptor.mappedAtCreation = false;
+        vertex_buffer = wgpuDeviceCreateBuffer(device, &buffer_descriptor);
+        wgpuQueueWriteBuffer(queue, vertex_buffer, 0, vertex_data.data(), buffer_descriptor.size);
+
+        buffer_descriptor.size = index_data.size() * sizeof(uint32_t);
+        buffer_descriptor.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Index;
+        index_buffer = wgpuDeviceCreateBuffer(device, &buffer_descriptor);
+
+        wgpuQueueWriteBuffer(queue, index_buffer, 0, index_data.data(), buffer_descriptor.size);
+    }
 private:
     GLFWwindow* window;
     WGPUDevice device;
@@ -326,6 +374,64 @@ private:
     WGPUTextureFormat surface_format = WGPUTextureFormat_Undefined;
     WGPURenderPipeline pipeline;
 
+    WGPUBuffer vertex_buffer;
+    WGPUBuffer index_buffer;
+    uint32_t index_count;
+
+    void set_default_limits(WGPULimits& limits) {
+        limits.maxTextureDimension1D = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxTextureDimension2D = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxTextureDimension3D = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxTextureArrayLayers = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxBindGroups = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxBindGroupsPlusVertexBuffers = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxBindingsPerBindGroup = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxDynamicUniformBuffersPerPipelineLayout = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxDynamicStorageBuffersPerPipelineLayout = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxSampledTexturesPerShaderStage = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxSamplersPerShaderStage = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxStorageBuffersPerShaderStage = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxStorageTexturesPerShaderStage = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxUniformBuffersPerShaderStage = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxUniformBufferBindingSize = WGPU_LIMIT_U64_UNDEFINED;
+        limits.maxStorageBufferBindingSize = WGPU_LIMIT_U64_UNDEFINED;
+        limits.minUniformBufferOffsetAlignment = WGPU_LIMIT_U32_UNDEFINED;
+        limits.minStorageBufferOffsetAlignment = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxVertexBuffers = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxBufferSize = WGPU_LIMIT_U64_UNDEFINED;
+        limits.maxVertexAttributes = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxVertexBufferArrayStride = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxInterStageShaderComponents = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxInterStageShaderVariables = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxColorAttachments = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxColorAttachmentBytesPerSample = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxComputeWorkgroupStorageSize = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxComputeInvocationsPerWorkgroup = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxComputeWorkgroupSizeX = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxComputeWorkgroupSizeY = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxComputeWorkgroupSizeZ = WGPU_LIMIT_U32_UNDEFINED;
+        limits.maxComputeWorkgroupsPerDimension = WGPU_LIMIT_U32_UNDEFINED;
+    }
+
+    WGPURequiredLimits get_required_limits(WGPUAdapter adapter) {
+        WGPUSupportedLimits supported_limits;
+        supported_limits.nextInChain = nullptr;
+        wgpuAdapterGetLimits(adapter, &supported_limits);
+
+        WGPURequiredLimits required_limits;
+        set_default_limits(required_limits.limits);
+
+        required_limits.limits.maxVertexAttributes = 2;
+        required_limits.limits.maxVertexBuffers = 1;
+        required_limits.limits.maxBufferSize = 6 * 5 * sizeof(float);
+        required_limits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
+        required_limits.limits.maxInterStageShaderComponents = 3;
+
+        required_limits.limits.minUniformBufferOffsetAlignment = supported_limits.limits.minUniformBufferOffsetAlignment;
+        required_limits.limits.minStorageBufferOffsetAlignment = supported_limits.limits.minStorageBufferOffsetAlignment;
+
+        return required_limits;
+    }
 
     std::pair<WGPUSurfaceTexture, WGPUTextureView> get_next_surface_view_data() {
         WGPUSurfaceTexture surface_texture;
