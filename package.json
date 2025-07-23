@@ -13,6 +13,7 @@
     "vite": "^7.0.4"
   },
   "dependencies": {
+    "@types/node": "^24.1.0",
     "@webgpu/types": "^0.1.64"
   }
 }

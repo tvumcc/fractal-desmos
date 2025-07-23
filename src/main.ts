@@ -27,8 +27,6 @@ const device = webgpu_ctx.device
 const context = webgpu_ctx.context
 const canvas_format = webgpu_ctx.canvas_format
 
-
-
 const uniforms = new Float32Array(8)
 uniforms.set([0.0, 1.0, 0.0, 1.0], 0);
 uniforms.set([Math.PI], 4);
@@ -66,24 +64,11 @@ const vertex_buffer_layout = {
 
 } as GPUVertexBufferLayout
 
+const response = await fetch("/shader.wgsl")
+const shader_code = await response.text()
+
 const shader_module = device.createShaderModule({
-    code: `
-    struct MyUniforms {
-        color: vec4f,
-        time: f32
-    };
-    @group(0) @binding(0) var<uniform> uniforms: MyUniforms;
-
-    @vertex
-    fn vs_main(@location(0) pos: vec2f) -> @builtin(position) vec4f {
-        return vec4f(pos.x + sin(uniforms.time), pos.y, 0.0, 1.0);
-    } 
-
-    @fragment
-    fn fs_main() -> @location(0) vec4f {
-        return uniforms.color;
-    }
-    `
+    code: shader_code
 }) as GPUShaderModule
 const pipeline = device.createRenderPipeline({
     layout: "auto",
