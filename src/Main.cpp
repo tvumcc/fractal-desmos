@@ -52,51 +52,60 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
 )";
 
 
-wgpu::Adapter request_adapter_sync(wgpu::Instance instance, const wgpu::RequestAdapterOptions& options) {
-    struct Context {
-        wgpu::Adapter adapter = nullptr;
+wgpu::Adapter request_adapter_sync(wgpu::Instance instance, wgpu::RequestAdapterOptions& options) {
+    struct UserData {
+        WGPUAdapter adapter = nullptr;
         bool request_ended = false;
     };
-    Context context;
+    UserData user_data;
 
-    instance.requestAdapter(options, [&context](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, const char* message) {
-        if (status == wgpu::RequestAdapterStatus::Success)
-            context.adapter = adapter;
-        else
+    auto on_adapter_request_ended = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* p_user_data) {
+        UserData& user_data = *reinterpret_cast<UserData*>(p_user_data);
+        if (status == WGPURequestAdapterStatus_Success) {
+            user_data.adapter = adapter;
+        } else {
             std::cout << std::format("Failed to acquire WebGPU adapter: {}\n", message);
-        context.request_ended = true;
-    });
+        }
+        user_data.request_ended = true;
+    };
+
+    wgpuInstanceRequestAdapter(instance, &options, on_adapter_request_ended, (void*)&user_data);
 
     #ifdef __EMSCRIPTEN__
     while (!user_data.request_ended) {
-        emscripten_sleep(100)
+        emscripten_sleep(100);
     }
     #endif
 
-    return context.adapter;
+    return (wgpu::Adapter)user_data.adapter;
 }
 
-wgpu::Device request_device_sync(wgpu::Adapter adapter, const wgpu::DeviceDescriptor& desc) {
-    struct Context {
-        wgpu::Device device = nullptr;
+wgpu::Device request_device_sync(wgpu::Adapter adapter, wgpu::DeviceDescriptor& desc) {
+    struct UserData {
+        WGPUDevice device = nullptr;
         bool request_ended = false;
     };
-    Context context;
+    UserData user_data;
 
-    adapter.requestDevice(desc, [&context](wgpu::RequestDeviceStatus status, wgpu::Device device, const char* message){
-        if (status == wgpu::RequestDeviceStatus::Success)
-            context.device = device;
-        else
+    auto on_device_requested = [](WGPURequestDeviceStatus status, WGPUDevice device, const char* message, void* p_user_data) {
+        UserData& user_data = *reinterpret_cast<UserData*>(p_user_data);
+        if (status == WGPURequestDeviceStatus_Success) {
+            user_data.device = device;
+        } else {
             std::cout << std::format("Failed to acquire WebGPU device: {}\n", message);
-    });
+        }
+        user_data.request_ended = true;
+    };
+
+    wgpuAdapterRequestDevice(adapter, &desc, on_device_requested, (void*)&user_data);
 
     #ifdef __EMSCRIPTEN__
     while (!user_data.request_ended) {
-        emscripten_sleep(100)
+        emscripten_sleep(100);
     }
     #endif
 
-    return context.device;
+    return (wgpu::Device)user_data.device;
 }
 
 class Application {
@@ -108,7 +117,11 @@ public:
         window = glfwCreateWindow(800, 600, "WebGPU Test", nullptr, nullptr);
 
         wgpu::InstanceDescriptor instance_desc{};
+        #ifdef WEBGPU_BACKEND_EMSCRIPTEN
+        wgpu::Instance instance = (wgpu::Instance)wgpuCreateInstance(nullptr);
+        #else
         wgpu::Instance instance = wgpu::createInstance(instance_desc); // REMINDER: might not work in Emscripten??
+        #endif
         
         if (!instance) {
             std::cout << "Failed to initialize WebGPU\n";
@@ -121,8 +134,8 @@ public:
         wgpu::Adapter adapter = request_adapter_sync(instance, adapter_options);
 
         wgpu::DeviceDescriptor device_desc{}; // REMINDER: maybe should add some error checking callback functions
-        wgpu::RequiredLimits required_limits = get_required_limits(adapter);
-        device_desc.requiredLimits = &required_limits;
+        // wgpu::RequiredLimits required_limits = get_required_limits(adapter);
+        // device_desc.requiredLimits = &required_limits;
         device = request_device_sync(adapter, device_desc);
         queue = device.getQueue();
 
@@ -177,6 +190,7 @@ public:
         if (!target_view) return;
 
         wgpu::CommandEncoderDescriptor encoder_desc{};
+        encoder_desc.setDefault();
         encoder_desc.label = "my encoder";
         wgpu::CommandEncoder encoder = device.createCommandEncoder(encoder_desc);
 
@@ -186,9 +200,9 @@ public:
         render_pass_color_attachment.loadOp = wgpu::LoadOp::Clear;
         render_pass_color_attachment.storeOp = wgpu::StoreOp::Store;
         render_pass_color_attachment.clearValue = wgpu::Color {0.9, 0.1, 0.2, 1.0};
-        // #ifndef WEBGPU_BACKEND_WGPU
-        // render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
-        // #endif
+        #ifndef WEBGPU_BACKEND_WGPU
+        render_pass_color_attachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+        #endif
 
         wgpu::RenderPassDescriptor render_pass_desc{};
         render_pass_desc.colorAttachmentCount = 1;
@@ -206,6 +220,7 @@ public:
         render_pass.release();
 
         wgpu::CommandBufferDescriptor command_buffer_desc{};
+        command_buffer_desc.setDefault();
         command_buffer_desc.label = "my cmd buffer";
         wgpu::CommandBuffer command = encoder.finish(command_buffer_desc);
         encoder.release();
@@ -266,7 +281,7 @@ private:
         shader_code_desc.chain.sType = wgpu::SType::ShaderModuleWGSLDescriptor;
         shader_desc.nextInChain = &shader_code_desc.chain;
 
-        wgpu::ShaderModule shader_module = wgpuDeviceCreateShaderModule(device, &shader_desc);
+        wgpu::ShaderModule shader_module = device.createShaderModule(shader_desc);
 
         // Setup the Render Pipeline
         wgpu::RenderPipelineDescriptor pipeline_desc{};
@@ -413,24 +428,34 @@ private:
     }
 
     wgpu::RequiredLimits get_required_limits(wgpu::Adapter adapter) const {
+        #ifndef __EMSCRIPTEN__
         wgpu::SupportedLimits supported_limits;
         adapter.getLimits(&supported_limits);
+        #endif
 
         wgpu::RequiredLimits required_limits = wgpu::Default;
+        required_limits.setDefault();
 
         required_limits.limits.maxVertexAttributes = 2;
         required_limits.limits.maxVertexBuffers = 1;
         required_limits.limits.maxBufferSize = 6 * 5 * sizeof(float);
         required_limits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
-        required_limits.limits.maxInterStageShaderComponents = 3;
+        // required_limits.limits.maxInterStageShaderComponents = 3u;
         required_limits.limits.maxTextureDimension2D = 2000;
 
         required_limits.limits.maxBindGroups = 1;
         required_limits.limits.maxUniformBuffersPerShaderStage = 1;
         required_limits.limits.maxUniformBufferBindingSize = 16 * 4;
 
+
+        #ifndef __EMSCRIPTEN__
         required_limits.limits.minUniformBufferOffsetAlignment = supported_limits.limits.minUniformBufferOffsetAlignment;
         required_limits.limits.minStorageBufferOffsetAlignment = supported_limits.limits.minStorageBufferOffsetAlignment;
+        #else
+        required_limits.limits.minUniformBufferOffsetAlignment = 256;
+        required_limits.limits.minStorageBufferOffsetAlignment = 256;
+        #endif
+
 
         return required_limits;
     }
@@ -444,8 +469,7 @@ private:
             
         wgpu::Texture texture = surface_texture.texture;
 
-        wgpu::TextureViewDescriptor view_desc;
-        view_desc.nextInChain = nullptr;
+        wgpu::TextureViewDescriptor view_desc{};
         view_desc.label = "Surface texture view";
         view_desc.format = texture.getFormat();
         view_desc.dimension = wgpu::TextureViewDimension::_2D;
@@ -472,7 +496,7 @@ int main() {
     auto callback = [](void* arg) {
         Application* p_app = reinterpret_cast<Application*>(arg);
         p_app->main_loop();
-    }
+    };
     emscripten_set_main_loop_arg(callback, &app, 0, true);
     #else
     while (app.is_running()) {

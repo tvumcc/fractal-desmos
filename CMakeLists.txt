@@ -8,9 +8,9 @@ project(fractal_desmos LANGUAGES C CXX)
 add_subdirectory(lib/webgpu)
 if (NOT EMSCRIPTEN)
 	add_subdirectory(lib/glfw)
-else()
-	add_library(glfw INTERFACE)
-	target_link_options(glfw INTERFACE -sUSE_GLFW=3)
+# else()
+# 	add_library(glfw INTERFACE)
+# 	target_link_options(glfw INTERFACE -sUSE_GLFW=3)
 endif()
 add_subdirectory(lib/glfw3webgpu)
 include_directories(
@@ -31,6 +31,11 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE webgpu glfw glfw3webgpu)
 target_copy_webgpu_binaries(${CMAKE_PROJECT_NAME})
 
 if (EMSCRIPTEN)
-	set_target_properties(App PROPERTIES SUFFIX ".html")	
-	target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -sASYNCIFY)
+	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SUFFIX ".html")	
+	target_link_options(${CMAKE_PROJECT_NAME} PRIVATE 
+		-sUSE_GLFW=3
+		-sUSE_WEBGPU
+		-sASYNCIFY
+		-sALLOW_MEMORY_GROWTH
+	)
 endif()
