@@ -1,4 +1,10 @@
 const canvas = document.getElementById("webgpu_canvas") as HTMLCanvasElement
+canvas.width = window.innerWidth;
+canvas.height = window.outerHeight;
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.outerHeight;
+})
 
 async function init_webgpu() {
     if (!navigator.gpu) {
@@ -29,7 +35,7 @@ const canvas_format = webgpu_ctx.canvas_format
 
 const uniforms = new Float32Array(8)
 uniforms.set([0.0, 1.0, 0.0, 1.0], 0);
-uniforms.set([Math.PI], 4);
+uniforms.set([Math.PI, canvas.width, canvas.height, 0.0], 4);
 const uniform_buffer = device.createBuffer({
     label: "uniform buffer",
     size: uniforms.byteLength,
@@ -97,7 +103,7 @@ function render_loop() {
     if (!context) {
         throw new Error("WebGPU Context is null")
     }
-    uniforms.set([performance.now() / 1000], 4);
+    uniforms.set([performance.now() / 1000, canvas.width, canvas.height], 4);
     device.queue.writeBuffer(uniform_buffer, 0, uniforms)
 
     const encoder = device.createCommandEncoder()

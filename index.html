@@ -6,6 +6,21 @@
   </head>
   <body>
     <canvas id="webgpu_canvas" width="1200" height="900"></canvas>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

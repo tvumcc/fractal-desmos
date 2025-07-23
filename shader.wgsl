@@ -1,6 +1,8 @@
 struct MyUniforms {
     color: vec4f,
-    time: f32
+    time: f32,
+    width: f32,
+    height: f32
 };
 
 @group(0) @binding(0) var<uniform> uniforms: MyUniforms;
@@ -21,13 +23,13 @@ fn mult(a: vec2f, b: vec2f) -> vec2f {
 fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
     var starting_color: vec3f = vec3f(0.0, 0.0, 0.0);
     var ending_color: vec3f = vec3f(0.4, 0.8, 0.6);
-    var aspect_ratio: f32 = 1200.0 / 900.0;
+    var aspect_ratio: f32 = uniforms.width / uniforms.height;
     var iterations: i32 = 40;
     var zoom: f32 = 2.0;
 
     var z: vec2f = vec2f(
-        ((position.x / 1200.0) * 2.0 - 1.0) * aspect_ratio * zoom,
-        ((position.y / 900.0) * 2.0 - 1.0) * zoom
+        ((position.x / uniforms.width) * 2.0 - 1.0) * aspect_ratio * zoom,
+        ((position.y / uniforms.height) * 2.0 - 1.0) * zoom
     );
 
     var c: vec2f = 0.8 * vec2f(cos(uniforms.time), sin(uniforms.time));
