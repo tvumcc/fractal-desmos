@@ -20,10 +20,11 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/lib/glfw3webgpu
 )
 
-file(GLOB_RECURSE SRC_FILES src/*.cpp)
+# file(GLOB_RECURSE SRC_FILES src/*.cpp)
 
 add_executable(${CMAKE_PROJECT_NAME}
-	${SRC_FILES}
+	# ${SRC_FILES}
+	src/Main.cpp
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE webgpu glfw glfw3webgpu)
