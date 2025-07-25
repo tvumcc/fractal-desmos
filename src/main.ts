@@ -1,10 +1,16 @@
-const canvas = document.getElementById("webgpu_canvas") as HTMLCanvasElement
-canvas.width = window.innerWidth;
-canvas.height = window.outerHeight;
+var canvas = document.getElementById("webgpu_canvas") as HTMLCanvasElement
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
 window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.outerHeight;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
 })
+
+
+export function parse(equation: string) {
+    console.log(equation)
+}
+
 
 async function init_webgpu() {
     if (!navigator.gpu) {
@@ -124,4 +130,4 @@ function render_loop() {
     requestAnimationFrame(render_loop)
 }
 
-requestAnimationFrame(render_loop)
+render_loop()

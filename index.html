@@ -5,8 +5,54 @@
     <title>Fractal Desmos</title>
   </head>
   <body>
-    <canvas id="webgpu_canvas" width="1200" height="900"></canvas>
+    <div class="main-container">
+      <div class="side-panel">
+        <p>f(z) = </p>
+        <p class="equation-entry">
+          <span id="answer"></span>
+        </p>
+      </div>
+      <div class="fractal-canvas">
+        <canvas id="webgpu_canvas"></canvas>
+      </div>
+    </div>
     <style>
+      .main-container {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        width: 100%;
+        height: 100%;
+      }
+
+      .side-panel {
+        margin: 0;
+        padding: 0;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .fractal-canvas {
+        margin: 0;
+        padding: 0;
+        flex: 5;
+      }
+
+      .equation-entry {
+        /* max-width: fit-content; */
+        overflow: auto;
+      }
+
+      #answer {
+        /* border: 0px; */
+        width: 100%;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+
       html, body {
         margin: 0;
         padding: 0;
@@ -14,13 +60,23 @@
         width: 100%;
         height: 100%;
       }
-
-      canvas {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-      }
     </style>
+
+    <link rel="stylesheet" href="/lib/mathquill.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="/lib/mathquill.js"></script>
     <script type="module" src="/src/main.ts"></script>
+    <script type="module">
+    import { parse } from "/src/main.ts"
+
+    var MQ = MathQuill.getInterface(2)
+    var equation_entry = MQ.MathField(document.getElementById("answer"), {
+      handlers: {
+        edit: function() {
+          parse(equation_entry.latex())
+        }
+      }
+    })
+    </script>
   </body>
 </html>
