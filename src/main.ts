@@ -211,11 +211,217 @@ class Lexer {
 // console.log(expr)
 // console.log(lexer.str())
 
+abstract class Expression {
+    abstract str(): string
+}
+class UnaryExpression extends Expression {
+    func: Token
+    inner: Expression
+
+    constructor(func: Token, inner: Expression) {
+        super()
+        this.func = func
+        this.inner = inner
+    }
+
+    str(): string {
+        return `${this.func.str()}[${this.inner.str()}]`
+    }
+}
+class BinaryExpression extends Expression {
+    left: Expression
+    func: Token
+    right: Expression
+
+    constructor(left: Expression, func: Token, right: Expression) {
+        super()
+        this.left = left
+        this.func = func
+        this.right = right
+    }
+    str(): string {
+        return `${this.func.str()}[${this.left.str()}, ${this.right.str()}]`
+    }
+}
+class Literal extends Expression {
+    value: Token
+
+    constructor(value: Token) {
+        super()
+        this.value = value
+    }
+    str(): string {
+        return `${this.value.str()}`
+    }
+}
+class Variable extends Expression {
+    identifier: Token
+    constructor(identifier: Token) {
+        super()
+        this.identifier = identifier 
+    }
+    str(): string {
+        return `${this.identifier.str()}`
+    }
+}
+class Group extends Expression {
+    inner: Expression
+    constructor(inner: Expression) {
+        super()
+        this.inner = inner
+    }
+    str(): string {
+        return `[${this.inner.str()}]`
+    }
+}
+
+class Parser {
+    tokens: Token[]
+    AST!: Expression
+    idx: number = 0
+    
+    constructor (tokens: Token[]) {
+        this.tokens = tokens
+    }
+
+    parse() {
+        this.AST = this.expression()
+    }
+
+    expression(): Expression {
+        return this.term();
+    }
+
+    term(): Expression {
+        let left: Expression = this.product()
+
+        if (this.matches_tokens([TokenType.PLUS, TokenType.MINUS])) {
+            let operator: Token = this.peek()!
+            this.advance()
+            let right: Expression = this.term()
+            return new BinaryExpression(left, operator, right)
+        }
+
+        return left; 
+    }
+
+    product(): Expression {
+        let left: Expression = this.unary()
+
+        if (this.matches_tokens([TokenType.DOT])) {
+            let operator: Token = this.peek()!
+            this.advance()
+            let right: Expression = this.product()
+            return new BinaryExpression(left, operator, right)
+        }
+
+        return left
+    }
+
+    unary(): Expression {
+        if (this.matches_tokens([TokenType.PLUS, TokenType.MINUS])) {
+            let operator: Token = this.peek()!
+            this.advance()
+            let inner: Expression = this.unary()
+            return new UnaryExpression(operator, inner)
+        }
+
+        return this.exponent()
+    }
+
+    exponent(): Expression {
+        let base: Expression = this.quotient()
+
+        if (this.matches_tokens([TokenType.CARET])) {
+            let operator: Token = this.peek()!
+            this.advance()
+            let exp: Expression = this.exponent()
+            return new BinaryExpression(base, operator, exp)
+        }
+
+        return base 
+    }
+
+    quotient(): Expression {
+        if (this.matches_tokens([TokenType.FRACTION])) {
+            let operator: Token = this.peek()!
+            this.advance()
+            let top: Expression = this.quotient()
+            let bot: Expression = this.quotient()
+            return new BinaryExpression(top, operator, bot)
+        }
+
+        return this.func()
+    }
+
+    func(): Expression {
+        if (this.matches_tokens([TokenType.SQRT, TokenType.SIN, TokenType.COS, TokenType.TAN, TokenType.LOG, TokenType.LN])) {
+            let operator: Token = this.peek()!
+            this.advance()
+            let inner: Expression = this.func()
+            return new UnaryExpression(operator, inner)
+        }
+
+        return this.primary()
+    }
+
+    primary(): Expression {
+        if (this.matches_tokens([TokenType.REAL, TokenType.IMAGINARY])) {
+            let inner: Token = this.peek()!
+            this.advance() 
+            return new Literal(inner)
+        } else if (this.matches_tokens([TokenType.IDENTIFIER, TokenType.PARAMETER])) {
+            let inner: Token = this.peek()!
+            this.advance() 
+            return new Variable(inner)
+        } else if (this.matches_tokens([TokenType.LEFT_PAREN])) {
+            this.advance()
+            let expr: Expression = this.expression()
+            this.advance()
+            return expr;
+        } else {
+            throw new Error("INVALID PRIMARRYY!!!")
+        }
+    }
+
+
+
+    peek(increment: number = 0): Token | null {
+        if (this.idx + increment < this.tokens.length) {
+            return this.tokens[this.idx + increment]
+        } else {
+            return null;
+        }
+    }
+
+    matches_tokens(tokens: TokenType[], increment: number = 0): boolean {
+        if (this.idx + increment < this.tokens.length) {
+            for (let token of tokens) {
+                if (token === this.tokens[this.idx+increment].type) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    advance(increment: number = 1) {
+        if (this.idx < this.tokens.length) {
+            this.idx += increment
+        } else {
+            throw Error("Can't advance: reached end of expr")
+        }
+    }
+}
+
 export function parse(equation: string) {
     let lexer: Lexer = new Lexer(equation, "z")
     lexer.lex()
     console.log(equation)
     console.log(lexer.str())
+    let parser: Parser = new Parser(lexer.tokens)
+    parser.parse()
+    console.log(parser.AST.str())
 }
 
 async function init_webgpu() {

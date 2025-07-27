@@ -1,0 +1,10 @@
+// Currently not supporting implicit multiplication
+
+expression = term
+term       = product ((PLUS | MINUS) term)?
+product    = quotient (DOT product)?
+quotient   = unary | FRACTION quotient quotient
+unary      = (PLUS | MINUS) unary | exponent 
+exponent   = func (CARET exponent)?
+func       = (SIN | COS | TAN | SQRT | LN | LOG) func | primary 
+primary    = REAL | IMAGINARY | IDENTIFIER | PARAMETER | LEFT_PAREN expression RIGHT_PAREN
