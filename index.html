@@ -7,10 +7,28 @@
   <body>
     <div class="main-container">
       <div class="side-panel">
-        <p>f(z) = </p>
-        <p class="equation-entry">
-          <span id="answer"></span>
-        </p>
+        <p>Use the variable <b>x</b> to access the pixel coordinate as a complex number.</p>
+        <p>Use the variable <b>t</b> to access the current time as a real number. (imaginary part is 0)</p>
+
+        <div class="entry">
+          <p class="equation-indicator">
+            z(0)
+          </p>
+          <p class="equals">=</p>
+          <p class="equation-entry">
+            <span id="initial-value"></span>
+          </p>
+        </div>
+        <div class="entry">
+          <p class="equation-indicator">
+            f(z)
+          </p>
+          <p class="equals">=</p>
+          <p class="equation-entry">
+            <span id="answer"></span>
+          </p>
+        </div>
+
       </div>
       <div class="fractal-canvas">
         <canvas id="webgpu_canvas"></canvas>
@@ -27,24 +45,48 @@
 
       .side-panel {
         margin: 0;
-        padding: 0;
-        flex: 3;
+        padding: 20px;
+        flex: 1;
         overflow: hidden;
       }
 
       .fractal-canvas {
         margin: 0;
         padding: 0;
-        flex: 1;
+        flex: 4;
+      }
+
+      .equals {
+        text-align: center;
+      }
+
+      .entry {
+        /* width: 100%; */
+        display: grid;
+        grid-template-columns: 60px 1.5fr 10fr;
+
+
+        align-items: center;
+        font-size: 13px;
+        padding: 0px;
+        margin: 0px;
       }
 
       .equation-entry {
-        /* max-width: fit-content; */
-        overflow: auto;
+        overflow: hidden;
+        border: 1px gray solid;
+        padding: 0px;
+        margin: 0px;
       }
 
-      #answer {
-        /* border: 0px; */
+      .equation-indicator {
+        text-align: center;
+        align-items: center;
+        margin: 0px;
+      }
+
+      #answer, #initial-value {
+        border: 0px;
         width: 100%;
       }
 
@@ -69,11 +111,28 @@
     <script type="module">
     import { parse } from "/src/main.ts"
 
-    var MQ = MathQuill.getInterface(2)
-    var equation_entry = MQ.MathField(document.getElementById("answer"), {
+    let MQ = MathQuill.getInterface(2)
+
+    let initial_value_entry = MQ.MathField(document.getElementById("initial-value"), {
+      supSubsRequireOperand: true,
+      // leftRightIntoCmdGoes: 'up',
+      autoCommands: 'pi theta sqrt',
       handlers: {
         edit: function() {
-          parse(equation_entry.latex())
+          // let latex = equation_entry.latex()
+          // parse(latex)
+        }
+      }
+    })
+
+    let equation_entry = MQ.MathField(document.getElementById("answer"), {
+      supSubsRequireOperand: true,
+      // leftRightIntoCmdGoes: 'up',
+      autoCommands: 'pi theta sqrt',
+      handlers: {
+        edit: function() {
+          let latex = equation_entry.latex()
+          parse(latex)
         }
       }
     })

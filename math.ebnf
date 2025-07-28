@@ -2,9 +2,9 @@
 
 expression = term
 term       = product ((PLUS | MINUS) term)?
-product    = quotient (DOT product)?
-quotient   = unary | FRACTION quotient quotient
+product    = unary (DOT product)?
 unary      = (PLUS | MINUS) unary | exponent 
-exponent   = func (CARET exponent)?
+exponent   = quotient (CARET exponent)?
+quotient   = func | FRACTION quotient quotient
 func       = (SIN | COS | TAN | SQRT | LN | LOG) func | primary 
 primary    = REAL | IMAGINARY | IDENTIFIER | PARAMETER | LEFT_PAREN expression RIGHT_PAREN
