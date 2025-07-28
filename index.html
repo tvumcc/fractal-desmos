@@ -16,7 +16,7 @@
           </p>
           <p class="equals">=</p>
           <p class="equation-entry">
-            <span id="initial-value"></span>
+            <span id="z0">x</span>
           </p>
         </div>
         <div class="entry">
@@ -25,7 +25,7 @@
           </p>
           <p class="equals">=</p>
           <p class="equation-entry">
-            <span id="answer"></span>
+            <span id="fz">z^2+\cos\left(t\right)+\sin\left(t\right)\cdot i</span>
           </p>
         </div>
 
@@ -34,76 +34,8 @@
         <canvas id="webgpu_canvas"></canvas>
       </div>
     </div>
-    <style>
-      .main-container {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        width: 100%;
-        height: 100%;
-      }
 
-      .side-panel {
-        margin: 0;
-        padding: 20px;
-        flex: 1;
-        overflow: hidden;
-      }
-
-      .fractal-canvas {
-        margin: 0;
-        padding: 0;
-        flex: 4;
-      }
-
-      .equals {
-        text-align: center;
-      }
-
-      .entry {
-        /* width: 100%; */
-        display: grid;
-        grid-template-columns: 60px 1.5fr 10fr;
-
-
-        align-items: center;
-        font-size: 13px;
-        padding: 0px;
-        margin: 0px;
-      }
-
-      .equation-entry {
-        overflow: hidden;
-        border: 1px gray solid;
-        padding: 0px;
-        margin: 0px;
-      }
-
-      .equation-indicator {
-        text-align: center;
-        align-items: center;
-        margin: 0px;
-      }
-
-      #answer, #initial-value {
-        border: 0px;
-        width: 100%;
-      }
-
-      canvas {
-        width: 100%;
-        height: 100%;
-      }
-
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-      }
-    </style>
-
+    <link rel="stylesheet" href="/style.css"/>
     <link rel="stylesheet" href="/lib/mathquill.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="/lib/mathquill.js"></script>
@@ -113,26 +45,22 @@
 
     let MQ = MathQuill.getInterface(2)
 
-    let initial_value_entry = MQ.MathField(document.getElementById("initial-value"), {
+    let z0_entry = MQ.MathField(document.getElementById("z0"), {
       supSubsRequireOperand: true,
-      // leftRightIntoCmdGoes: 'up',
       autoCommands: 'pi theta sqrt',
       handlers: {
         edit: function() {
-          // let latex = equation_entry.latex()
-          // parse(latex)
+          parse(z0_entry.latex(), equation_entry.latex())
         }
       }
     })
 
-    let equation_entry = MQ.MathField(document.getElementById("answer"), {
+    let equation_entry = MQ.MathField(document.getElementById("fz"), {
       supSubsRequireOperand: true,
-      // leftRightIntoCmdGoes: 'up',
       autoCommands: 'pi theta sqrt',
       handlers: {
         edit: function() {
-          let latex = equation_entry.latex()
-          parse(latex)
+          parse(z0_entry.latex(), equation_entry.latex())
         }
       }
     })

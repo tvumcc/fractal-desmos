@@ -1,0 +1,68 @@
+.main-container {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.side-panel {
+    margin: 0;
+    padding: 20px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.fractal-canvas {
+    margin: 0;
+    padding: 0;
+    flex: 4;
+}
+
+.equals {
+    text-align: center;
+}
+
+.entry {
+    /* width: 100%; */
+    display: grid;
+    grid-template-columns: 20px 1.5fr 10fr;
+
+
+    align-items: center;
+    font-size: 13px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.equation-entry {
+    overflow: hidden;
+    border: 1px gray solid;
+    padding: 0px;
+    margin: 0px;
+}
+
+.equation-indicator {
+    text-align: center;
+    align-items: center;
+    margin: 0px;
+}
+
+#z0,#fz {
+    border: 0px;
+    width: 100%;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}

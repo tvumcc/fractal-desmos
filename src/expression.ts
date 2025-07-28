@@ -1,7 +1,7 @@
 import {Token} from "./token.ts"
 
 export abstract class Expression {
-    abstract str(): string
+    abstract toString(): string
 }
 
 export class Unary extends Expression {
@@ -14,8 +14,8 @@ export class Unary extends Expression {
         this.inner = inner
     }
 
-    str(): string {
-        return `${this.func.str()}[${this.inner.str()}]`
+    toString(): string {
+        return `${this.func.toString()}[${this.inner.toString()}]`
     }
 }
 
@@ -30,8 +30,8 @@ export class Binary extends Expression {
         this.func = func
         this.right = right
     }
-    str(): string {
-        return `${this.func.str()}[${this.left.str()}, ${this.right.str()}]`
+    toString(): string {
+        return `${this.func.toString()}[${this.left.toString()}, ${this.right.toString()}]`
     }
 }
 
@@ -42,8 +42,8 @@ export class Literal extends Expression {
         super()
         this.value = value
     }
-    str(): string {
-        return `${this.value.str()}`
+    toString(): string {
+        return `${this.value.toString()}`
     }
 }
 
@@ -53,8 +53,8 @@ export class Variable extends Expression {
         super()
         this.identifier = identifier 
     }
-    str(): string {
-        return `${this.identifier.str()}`
+    toString(): string {
+        return `${this.identifier.toString()}`
     }
 }
 
@@ -66,7 +66,7 @@ export class ParseError extends Expression {
         this.error_message = error_message
     }
 
-    str(): string {
+    toString(): string {
         return `ERROR[${this.error_message}]`
     }
 }

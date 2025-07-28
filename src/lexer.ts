@@ -137,10 +137,10 @@ export class Lexer {
         }
     }
 
-    str(): string {
+    toString(): string {
         let out: string = ""
         for (let token of this.tokens) {
-            out += token.str() + " " 
+            out += token.toString() + " " 
         }
         return out
     }

@@ -21,7 +21,7 @@ export class Token {
         this.value = value
     }
 
-    str(): string {
+    toString(): string {
         if (this.value === "") {
             return TokenType[this.type]
         } else {

@@ -95,7 +95,7 @@ export class Renderer {
         }) as GPUBindGroup
     }
 
-    change_uniforms(uniforms: Float32Array<ArrayBuffer>) {
+    update_uniform_buffer(uniforms: Float32Array<ArrayBuffer>) {
         this.device.queue.writeBuffer(this.uniform_buffer, 0, uniforms);
     }
 
