@@ -62,6 +62,12 @@ export class AppState {
         }
     }
 
+    print() {
+        for (let [k, v] of this.variables) {
+            console.log(`${k} : ${v.toString()}`)
+        }
+    }
+
     get_shader_code(): string {
         return `
 struct MyUniforms {
@@ -227,6 +233,47 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
             out += `\tu${v.id}: vec2f,\n`
         }
         return out;
+    }
+
+    insert_user_var_sliders() {
+        let var_sliders = document.getElementById("var-sliders")
+        var_sliders?.replaceChildren()
+        for (let [k, v] of this.variables) {
+            var_sliders?.insertAdjacentHTML("beforeend", `
+            <div class="var-slider">
+                <p><span class="latex">${k}</span></p>
+                <div class="var-display" id="var-display-${k}">${v.real} + ${v.imag}i</div>
+                <p class="slider-label">Real</p>
+                <input type="range" id="${k}_real" value="${v.real}" min="-2" max="2" step="0.001">
+                <p class="slider-label">Imag</p>
+                <input type="range" id="${k}_imag" value="${v.imag}" min="-2" max="2" step="0.001">
+            </div>
+            `) 
+            
+            const self: AppState = this as AppState
+
+            (document.getElementById(`${k}_real`) as HTMLInputElement)?.addEventListener("input", function() {
+                let user_var = self.variables.get(`${k}`)
+                let user_var_display = document.getElementById(`var-display-${k}`)
+                if (user_var != null) {
+                    user_var.real = Number.parseFloat((this as HTMLInputElement).value)
+                }
+                if (user_var_display != null) {
+                    user_var_display.innerText = `${v.real} + ${v.imag}i`;
+                }
+            });
+
+            (document.getElementById(`${k}_imag`) as HTMLInputElement)?.addEventListener("input", function() {
+                let user_var = self.variables.get(`${k}`)
+                let user_var_display = document.getElementById(`var-display-${k}`)
+                if (user_var != null) {
+                    user_var.imag = Number.parseFloat((this as HTMLInputElement).value)
+                }
+                if (user_var_display != null) {
+                    user_var_display.innerText = `${v.real} + ${v.imag}i`;
+                }
+            });
+        }
     }
 
     update_uniform_array(uniforms: Float32Array) {

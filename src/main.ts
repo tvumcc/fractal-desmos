@@ -36,11 +36,14 @@ export function parse(z0: string, equation: string) {
     if (parser.valid) {
         console.log(`Latex: ${equation}\nTokens: ${lexer.toString()}\nAST: ${equation_AST.toString()}`)
         state.set_AST(z0_AST, equation_AST)
+        state.init_variables()
+
         renderer.set_shader_code(state.get_shader_code())
 
         uniforms = new Float32Array(4.0 * Math.ceil((8.0 + 2 * state.variables.size) / 4.0))
         state.update_uniform_array(uniforms)
         renderer.set_uniforms(uniforms)
+        state.insert_user_var_sliders()
     } else {
         console.log(parser.error_message)
     }

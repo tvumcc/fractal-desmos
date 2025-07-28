@@ -29,6 +29,8 @@
           </p>
         </div>
 
+        <hr>
+        <div id="var-sliders"></div>
       </div>
       <div class="fractal-canvas">
         <canvas id="webgpu_canvas"></canvas>
@@ -51,6 +53,11 @@
       handlers: {
         edit: function() {
           parse(z0_entry.latex(), equation_entry.latex())
+          let math_fields = document.getElementsByClassName("latex");
+          for (let math_field of math_fields) {
+            MQ.StaticMath(math_field)
+            console.log(math_field.innerText)
+          }
         }
       }
     })
@@ -61,6 +68,11 @@
       handlers: {
         edit: function() {
           parse(z0_entry.latex(), equation_entry.latex())
+          let math_fields = document.getElementsByClassName("latex");
+          for (let math_field of math_fields) {
+            MQ.StaticMath(math_field)
+            console.log(math_field.innerText)
+          }
         }
       }
     })

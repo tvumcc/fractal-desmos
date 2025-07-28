@@ -10,7 +10,7 @@
     margin: 0;
     padding: 20px;
     flex: 1;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .fractal-canvas {
@@ -24,11 +24,8 @@
 }
 
 .entry {
-    /* width: 100%; */
     display: grid;
     grid-template-columns: 20px 1.5fr 10fr;
-
-
     align-items: center;
     font-size: 13px;
     padding: 0px;
@@ -47,6 +44,34 @@
     align-items: center;
     margin: 0px;
 }
+
+.var-sliders {
+}
+
+.var-slider {
+    display: grid;
+    grid-template-columns: 50px 5fr;
+    border: 1px gray solid;
+    padding: 6px;
+    margin: 10px;
+    align-items: center;
+}
+
+.var-display {
+    text-align: center;
+    font-size: 20px;
+}
+
+.latex {
+    width: 50px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.slider-label {
+    margin: 0px;
+}
+
 
 #z0,#fz {
     border: 0px;
