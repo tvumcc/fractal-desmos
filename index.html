@@ -26,7 +26,8 @@
           </p>
           <p class="equals">=</p>
           <p class="equation-entry">
-            <span id="fz">z^2+\cos\left(t\right)+\sin\left(t\right)\cdot i</span>
+            <!-- <span id="fz">z^2+\cos\left(t\right)+i\sin\left(t\right)</span> -->
+            <span id="fz">z^2</span>
           </p>
         </div>
 
@@ -38,13 +39,13 @@
       </div>
     </div>
 
-    <link rel="stylesheet" href="/style.css"/>
-    <link rel="stylesheet" href="/lib/mathquill.css"/>
+    <link rel="stylesheet" href="./style.css"/>
+    <link rel="stylesheet" href="./lib/mathquill.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script src="/lib/mathquill.js"></script>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="./lib/mathquill.js"></script>
+    <script type="module" src="./src/main.ts"></script>
     <script type="module">
-    import { parse } from "/src/main.ts"
+    import { parse } from "./src/main.ts"
 
     let MQ = MathQuill.getInterface(2)
     let symbols = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omikron pi rho sigma tau upsilon chi psi omega"

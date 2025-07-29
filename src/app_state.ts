@@ -22,11 +22,20 @@ export class AppState {
     initial_value_AST!: Expr.Expression
     equation_AST!: Expr.Expression
 
-    valid: boolean = true;
+    valid: boolean = true
 
+    left_mouse_down = false
     right_mouse_down = false
+    prev_mouse_x = 0.0
+    prev_mouse_y = 0.0
+
     c_real: number = 0.0
     c_imag: number = 0.0
+
+    zoom: number = 2.0
+    iterations: number = 60
+    pan_real: number = 0.0
+    pan_imag: number = 0.0
 
     set_AST(initial_value_AST: Expr.Expression, equation_AST: Expr.Expression) {
         this.initial_value_AST = initial_value_AST
@@ -46,7 +55,7 @@ export class AppState {
                 this.variables.set(k, v)
         }
 
-        for (let [k, v] of this.variables)
+        for (let [k, _] of this.variables)
             if (!var_map.has(k))
                 this.variables.delete(k)
     }
@@ -80,6 +89,9 @@ struct MyUniforms {
     c: vec2f,
     width: f32,
     height: f32,
+    zoom: f32,
+    iterations: f32,
+    pan: vec2f,
     ${this.get_user_var_struct_fields()}
 };
 
@@ -159,21 +171,19 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
     var starting_color: vec3f = vec3f(0.0, 0.0, 0.0);
     var ending_color: vec3f = vec3f(0.4, 0.8, 0.6);
     var aspect_ratio: f32 = uniforms.width / uniforms.height;
-    var iterations: i32 = 60;
-    var zoom: f32 = 2.0;
 
     var x: vec2f = vec2f(
-        ((position.x / uniforms.width) * 2.0 - 1.0) * aspect_ratio * zoom,
-        ((position.y / uniforms.height) * 2.0 - 1.0) * zoom
+        ((position.x / uniforms.width) * 2.0 - 1.0 + uniforms.pan.x) * aspect_ratio * uniforms.zoom,
+        ((position.y / uniforms.height) * 2.0 - 1.0 + uniforms.pan.y) * uniforms.zoom
     );
 
     var z: vec2f = ${this.get_code(this.initial_value_AST)};
 
-    for (var i: i32 = 0; i < iterations; i++) {
+    for (var i: i32 = 0; i < 50; i++) {
         z = ${this.get_code(this.equation_AST)};
         var mag2: f32 = dot(z, z);
         if (mag2 > 4.0) {
-            return vec4(2.0 * mix(starting_color, ending_color, (f32(i) + 1.0 - log2(log2(mag2))) / f32(iterations)), 1.0);
+            return vec4(2.0 * mix(starting_color, ending_color, (f32(i) + 1.0 - log2(log2(mag2))) / uniforms.iterations), 1.0);
         }
     }
 
@@ -220,7 +230,7 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
 
     get_user_var_struct_fields(): string {
         let out: string = ""
-        for (let [k, v] of this.variables) {
+        for (let [_, v] of this.variables) {
             out += `\tu${v.id}: vec2f,\n`
         }
         return out;
@@ -271,8 +281,11 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
         uniforms.set([0.0, 1.0, 0.0, 1.0], 0); // Color
         uniforms.set([performance.now() / 1000, 0.0], 4) // Time
         uniforms.set([this.c_real, this.c_imag], 6)
+        uniforms.set([this.zoom], 10)
+        uniforms.set([this.iterations], 11)
+        uniforms.set([this.pan_real, this.pan_imag], 12)
         let count = 0
-        for (let [k, v] of this.variables) {
+        for (let [_, v] of this.variables) {
             uniforms.set([v.real, v.imag], 10 + 2 * count)
             count += 1
         }
