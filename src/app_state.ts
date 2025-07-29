@@ -169,26 +169,15 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
 
     var z: vec2f = ${this.get_code(this.initial_value_AST)};
 
-    var total: f32 = 0.0;
-    var color: vec3f = vec3f(0.4, 0.8, 0.6);
-    var escaped: bool = false;
-
     for (var i: i32 = 0; i < iterations; i++) {
         z = ${this.get_code(this.equation_AST)};
-        if (length(z) > 2.0) {
-            total = f32(i);
-            escaped = true;
-            break;
+        var mag2: f32 = dot(z, z);
+        if (mag2 > 4.0) {
+            return vec4(2.0 * mix(starting_color, ending_color, (f32(i) + 1.0 - log2(log2(mag2))) / f32(iterations)), 1.0);
         }
     }
 
-    if (escaped) {
-        color = mix(starting_color, ending_color, total / f32(iterations));
-    } else {
-        color = vec3(0.0);
-    }
-
-    return 2.0 * vec4(color, 1.0);
+    return vec4(0.0, 0.0, 0.0, 1.0);
 }`
     }
 
@@ -212,10 +201,7 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
                 case TokenType.CARET:    return `complex_pow(${this.get_code(AST.left)}, ${this.get_code(AST.right)})`
             }
         } else if (AST instanceof Expr.Literal) {
-            switch (AST.value.type) {
-                case TokenType.REAL:      return `vec2f(${AST.value.value}, 0.0)`
-                case TokenType.IMAGINARY: return `vec2f(0.0, ${AST.value.value})`
-            }
+            return `vec2f(${AST.value.value}, 0.0)`
         } else if (AST instanceof Expr.Variable) {
             switch (AST.identifier.type) {
                 case TokenType.IDENTIFIER: return `uniforms.u${this.variables.get(AST.identifier.value)!.id}`

@@ -27,7 +27,7 @@
     display: grid;
     grid-template-columns: 20px 1.5fr 10fr;
     align-items: center;
-    font-size: 13px;
+    font-size: 16px;
     padding: 0px;
     margin: 0px;
 }

@@ -36,14 +36,28 @@ export class Parser {
 
     product(): Expr.Expression {
         let left: Expr.Expression = this.unary()
-
+        
         if (this.matches_tokens([TokenType.DOT])) {
             let operator: Token = this.peek()!
             this.advance()
             let right: Expr.Expression = this.product()
             return new Expr.Binary(left, operator, right)
+        } else if (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER, TokenType.SQRT, TokenType.SIN, TokenType.COS, TokenType.TAN, TokenType.LOG, TokenType.LN])) {
+            let right: Expr.Expression
+            if (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER])) {
+                right = new Expr.Binary(left, new Token(TokenType.DOT), this.primary())
+            } else {
+                right = new Expr.Binary(left, new Token(TokenType.DOT), this.func())
+            }
+            while (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER, TokenType.SQRT, TokenType.SIN, TokenType.COS, TokenType.TAN, TokenType.LOG, TokenType.LN])) {
+                if (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER])) {
+                    right = new Expr.Binary(right, new Token(TokenType.DOT), this.primary())
+                } else {
+                    right = new Expr.Binary(right, new Token(TokenType.DOT), this.func())
+                }
+            }
+            return right;
         }
-
         return left
     }
 
@@ -95,7 +109,7 @@ export class Parser {
     }
 
     primary(): Expr.Expression {
-        if (this.matches_tokens([TokenType.REAL, TokenType.IMAGINARY])) {
+        if (this.matches_tokens([TokenType.REAL])) {
             let inner: Token = this.peek()!
             this.advance() 
             return new Expr.Literal(inner)

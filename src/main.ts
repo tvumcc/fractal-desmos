@@ -5,11 +5,11 @@ import {Parser} from "./parser.ts"
 import {Renderer} from "./renderer.ts"
 
 let canvas = document.getElementById("webgpu_canvas") as HTMLCanvasElement
-canvas.width = canvas.clientWidth;
-canvas.height = canvas.clientHeight;
+canvas.width = canvas.clientWidth / 2;
+canvas.height = canvas.clientHeight / 2;
 window.addEventListener("resize", () => {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    canvas.width = canvas.clientWidth / 2;
+    canvas.height = canvas.clientHeight / 2;
 })
 
 let renderer: Renderer = new Renderer(canvas)
@@ -37,14 +37,23 @@ canvas.addEventListener("mousemove", (event) => {
     }
 })
 
+
 export function parse(z0: string, equation: string) {
-    let lexer: Lexer = new Lexer(z0, ["x", "t", "z", "c"])
+    let parameters: Map<string, string> = new Map([
+        ["i", "vec2f(0.0, 1.0)"],
+        ["x", "x"],
+        ["t", "uniforms.t"],
+        ["z", "z"],
+        ["c", "uniforms.c"]
+    ])
+
+    let lexer: Lexer = new Lexer(z0, parameters)
     lexer.lex()
     let parser: Parser = new Parser(lexer.tokens)
     parser.parse()
     let z0_AST: Expression = parser.AST
 
-    lexer = new Lexer(equation, ["x", "t", "z", "c"])
+    lexer = new Lexer(equation, parameters)
     lexer.lex()
     parser = new Parser(lexer.tokens)
     parser.parse()

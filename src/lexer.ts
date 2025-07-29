@@ -3,7 +3,7 @@ import {Token, TokenType} from "./token.ts"
 export class Lexer {
     tokens: Token[] = []
     expr: string
-    parameters: string[]
+    parameters: Map<string, string>
     idx: number = 0
 
     command_mapping: Map<string, TokenType> = new Map([
@@ -23,7 +23,7 @@ export class Lexer {
 
     // TODO: add support for the greek letters/symbols
 
-    constructor(expr: string, parameters: string[]) {
+    constructor(expr: string, parameters: Map<string, string>) {
         this.expr = expr
         this.parameters = parameters
     } 
@@ -50,9 +50,6 @@ export class Lexer {
                 } break;
                 case "^": {
                     this.add_token(new Token(TokenType.CARET), 1)
-                } break;
-                case "i": {
-                    this.add_token(new Token(TokenType.IMAGINARY, "1"), 1)
                 } break;
 
                 // Commands
@@ -93,11 +90,7 @@ export class Lexer {
                             this.advance()
                         }
 
-                        if (this.peek() === "i") {
-                            this.add_token(new Token(TokenType.IMAGINARY, literal), 1)
-                        } else {
-                            this.add_token(new Token(TokenType.REAL, literal))
-                        }
+                        this.add_token(new Token(TokenType.REAL, literal))
                     } else if (this.peek().match("[a-zA-z]")) {
                         let identifier: string = this.peek()
                         this.advance()
@@ -123,8 +116,8 @@ export class Lexer {
                             }
                         }
 
-                        if (this.parameters.includes(identifier)) {
-                            this.add_token(new Token(TokenType.PARAMETER, identifier))
+                        if (this.parameters.has(identifier)) {
+                            this.add_token(new Token(TokenType.PARAMETER, this.parameters.get(identifier)))
                         } else {
                             this.add_token(new Token(TokenType.IDENTIFIER, identifier))
                         }

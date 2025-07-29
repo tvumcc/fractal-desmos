@@ -1,6 +1,6 @@
 export enum TokenType {
     // Literals
-    REAL, IMAGINARY, IDENTIFIER, PARAMETER,
+    REAL, IDENTIFIER, PARAMETER,
 
     // Operators
     PLUS, MINUS, DOT, FRACTION, CARET,    
