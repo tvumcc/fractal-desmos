@@ -47,10 +47,11 @@
     import { parse } from "/src/main.ts"
 
     let MQ = MathQuill.getInterface(2)
+    let symbols = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omikron pi rho sigma tau upsilon chi psi omega"
 
     let z0_entry = MQ.MathField(document.getElementById("z0"), {
       supSubsRequireOperand: true,
-      autoCommands: 'pi theta sqrt',
+      autoCommands: "sqrt " + symbols,
       handlers: {
         edit: function() {
           parse(z0_entry.latex(), equation_entry.latex())
@@ -65,7 +66,7 @@
 
     let equation_entry = MQ.MathField(document.getElementById("fz"), {
       supSubsRequireOperand: true,
-      autoCommands: 'pi theta sqrt',
+      autoCommands: "sqrt " + symbols,
       handlers: {
         edit: function() {
           parse(z0_entry.latex(), equation_entry.latex())

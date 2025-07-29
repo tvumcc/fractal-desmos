@@ -43,18 +43,9 @@ export class Parser {
             let right: Expr.Expression = this.product()
             return new Expr.Binary(left, operator, right)
         } else if (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER, TokenType.SQRT, TokenType.SIN, TokenType.COS, TokenType.TAN, TokenType.LOG, TokenType.LN])) {
-            let right: Expr.Expression
-            if (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER])) {
-                right = new Expr.Binary(left, new Token(TokenType.DOT), this.primary())
-            } else {
-                right = new Expr.Binary(left, new Token(TokenType.DOT), this.func())
-            }
+            let right: Expr.Expression = new Expr.Binary(left, new Token(TokenType.DOT), this.exponent())
             while (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER, TokenType.SQRT, TokenType.SIN, TokenType.COS, TokenType.TAN, TokenType.LOG, TokenType.LN])) {
-                if (this.matches_tokens([TokenType.LEFT_PAREN, TokenType.IDENTIFIER, TokenType.PARAMETER])) {
-                    right = new Expr.Binary(right, new Token(TokenType.DOT), this.primary())
-                } else {
-                    right = new Expr.Binary(right, new Token(TokenType.DOT), this.func())
-                }
+                right = new Expr.Binary(right, new Token(TokenType.DOT), this.exponent())
             }
             return right;
         }

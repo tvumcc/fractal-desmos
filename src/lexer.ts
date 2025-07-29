@@ -22,6 +22,31 @@ export class Lexer {
     ])
 
     // TODO: add support for the greek letters/symbols
+    symbols = [
+        "alpha",
+        "beta",
+        "gamma",
+        "delta",
+        "epsilon",
+        "zeta",
+        "eta",
+        "theta",
+        "iota",
+        "kappa",
+        "lambda",
+        "mu",
+        "nu",
+        "xi",
+        "omikron",
+        "pi",
+        "rho",
+        "sigma",
+        "tau",
+        "upsilon",
+        "chi",
+        "psi",
+        "omega"
+    ]
 
     constructor(expr: string, parameters: Map<string, string>) {
         this.expr = expr
@@ -62,6 +87,36 @@ export class Lexer {
                             break;
                         }
                     }
+                    for (let symbol of this.symbols) {
+                        if (this.match_next(symbol)) {
+                            let identifier = "\\" + symbol;
+                            this.advance(identifier.length)
+                            if (this.peek() === "_") {
+                                identifier += this.peek()
+                                this.advance()
+
+                                if (this.peek() === "{") {
+                                    let count = 1
+                                    identifier += this.peek()
+                                    this.advance();
+
+                                    while (count > 0) {
+                                        if (this.peek() === "}") count -= 1
+                                        else if (this.peek() === "{") count += 1
+                                        identifier += this.peek()
+                                        this.advance()
+                                    }
+                                } else {
+                                    identifier += this.peek()
+                                    this.advance()
+                                }
+                            }
+                            this.add_token(new Token(TokenType.IDENTIFIER, identifier))
+                            match = true;
+                            break;
+                        }
+                    }
+
                     if (!match) {
                         if (this.match_next(" ")) {
                             this.advance(2)
