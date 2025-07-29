@@ -24,6 +24,10 @@ export class AppState {
 
     valid: boolean = true;
 
+    right_mouse_down = false
+    c_real: number = 0.0
+    c_imag: number = 0.0
+
     set_AST(initial_value_AST: Expr.Expression, equation_AST: Expr.Expression) {
         this.initial_value_AST = initial_value_AST
         this.equation_AST = equation_AST
@@ -73,6 +77,7 @@ export class AppState {
 struct MyUniforms {
     color: vec4f,
     t: vec2f,
+    c: vec2f,
     width: f32,
     height: f32,
     ${this.get_user_var_struct_fields()}
@@ -215,7 +220,7 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
             switch (AST.identifier.type) {
                 case TokenType.IDENTIFIER: return `uniforms.u${this.variables.get(AST.identifier.value)!.id}`
                 case TokenType.PARAMETER: {
-                    if (AST.identifier.value === "t") {
+                    if (AST.identifier.value === "t" || AST.identifier.value === "c") {
                         return `uniforms.${AST.identifier.value}`
                     } else {
                         return `${AST.identifier.value}`
@@ -279,9 +284,10 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
     update_uniform_array(uniforms: Float32Array) {
         uniforms.set([0.0, 1.0, 0.0, 1.0], 0); // Color
         uniforms.set([performance.now() / 1000, 0.0], 4) // Time
+        uniforms.set([this.c_real, this.c_imag], 6)
         let count = 0
         for (let [k, v] of this.variables) {
-            uniforms.set([v.real, v.imag], 8 + 2 * count)
+            uniforms.set([v.real, v.imag], 10 + 2 * count)
             count += 1
         }
     }
