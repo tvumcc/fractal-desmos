@@ -242,8 +242,8 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
         for (let [k, v] of this.variables) {
             var_sliders?.insertAdjacentHTML("beforeend", `
             <div class="var-slider">
-                <p><span class="latex">${k}</span></p>
-                <div class="var-display" id="var-display-${k}">${v.real} + ${v.imag}i</div>
+                <p class="var-identifier"><span class="latex">${k}</span></p>
+                <p class="var-display" id="var-display-${k}">${v.real} + ${v.imag}i</p>
                 <p class="slider-label">Real</p>
                 <input type="range" id="${k}_real" value="${v.real}" min="-2" max="2" step="0.001">
                 <p class="slider-label">Imag</p>

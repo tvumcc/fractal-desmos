@@ -4,7 +4,7 @@ import {Lexer} from "./lexer.ts"
 import {Parser} from "./parser.ts"
 import {Renderer} from "./renderer.ts"
 
-let canvas = document.getElementById("webgpu_canvas") as HTMLCanvasElement
+let canvas = document.getElementById("webgpu-canvas") as HTMLCanvasElement
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 window.addEventListener("resize", () => {

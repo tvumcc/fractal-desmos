@@ -3,41 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <title>Fractal Desmos</title>
-  </head>
-  <body>
-    <div class="main-container">
-      <div class="side-panel">
-        <p>Use the variable <b>x</b> to access the pixel coordinate as a complex number.</p>
-        <p>Use the variable <b>t</b> to access the current time as a real number. (imaginary part is 0)</p>
-        <p>Use the variable <b>c</b> to access the mouse coordinates as a complex number.</p>
-
-        <div class="entry">
-          <p class="equation-indicator">
-            z(0)
-          </p>
-          <p class="equals">=</p>
-          <p class="equation-entry">
-            <span id="z0">x</span>
-          </p>
-        </div>
-        <div class="entry">
-          <p class="equation-indicator">
-            f(z)
-          </p>
-          <p class="equals">=</p>
-          <p class="equation-entry">
-            <span id="fz">z^2+\cos\left(t\right)+i\sin\left(t\right)</span>
-          </p>
-        </div>
-
-        <hr>
-        <div id="var-sliders"></div>
-      </div>
-      <div class="fractal-canvas">
-        <canvas id="webgpu_canvas"></canvas>
-      </div>
-    </div>
-
     <link rel="stylesheet" href="./style.css"/>
     <link rel="stylesheet" href="./lib/mathquill.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -48,6 +13,9 @@
 
     let MQ = MathQuill.getInterface(2)
     let symbols = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omikron pi rho sigma tau upsilon chi psi omega"
+    let math_fields = document.getElementsByClassName("latex");
+    for (let math_field of math_fields)
+      MQ.StaticMath(math_field)
 
     let z0_entry = MQ.MathField(document.getElementById("z0"), {
       supSubsRequireOperand: true,
@@ -56,10 +24,8 @@
         edit: function() {
           parse(z0_entry.latex(), equation_entry.latex())
           let math_fields = document.getElementsByClassName("latex");
-          for (let math_field of math_fields) {
+          for (let math_field of math_fields)
             MQ.StaticMath(math_field)
-            console.log(math_field.innerText)
-          }
         }
       }
     })
@@ -71,13 +37,74 @@
         edit: function() {
           parse(z0_entry.latex(), equation_entry.latex())
           let math_fields = document.getElementsByClassName("latex");
-          for (let math_field of math_fields) {
+          for (let math_field of math_fields)
             MQ.StaticMath(math_field)
-            console.log(math_field.innerText)
-          }
         }
       }
     })
     </script>
+  </head>
+  <body>
+    <div class="main-container">
+      <div class="side-panel">
+        <div id="info">
+          <h2>How To Use</h2>
+          <div id="how-to-use">
+            <p>
+              Enter in your own equations for an 
+              <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Escape_time_algorithm">escape time fractal</a>
+              or choose from the presets
+              to get some ideas. 
+            </p>
+            <p><b>z<sub>0</sub></b> is initial value of <b>z</b>, and <b>f(z)</b>
+              is function of <b>z</b> applied on each iteration to get the next value of <b>z</b>.
+            </p>
+          </div>
+          <h2>Controls</h2>
+          <div id="controls">
+            <p><b>Left Click</b> and drag to pan</p>
+            <p><b>Right Click</b> and drag to set the value of <b>c</b></p>
+            <p><b>Scroll</b> to zoom in or out on a location</p>
+          </div>
+          <h2>Parameters</h2>
+          <div id="parameters">
+            <p>Use these as variables in your equations:</p>
+            <p><b>x</b> the pixel coordinate as a complex number.</p>
+            <p><b>t</b> the current time as a real number.</p>
+            <p><b>c</b> the mouse coordinates as a complex number.</p>
+          </div>
+          <h2>Presets</h2>
+          <div id="presets">
+            <p>Coming Soon</p>
+          </div>
+
+          <hr>
+          <div class="entry">
+            <p class="equation-indicator">
+              <span class="latex">z_0</span>
+            </p>
+            <p class="equals">=</p>
+            <p class="formula-entry">
+              <span id="z0">x+a</span>
+            </p>
+          </div>
+          <div class="entry">
+            <p class="equation-indicator">
+              <span class="latex">f(z)</span>
+            </p>
+            <p class="equals">=</p>
+            <p class="formula-entry">
+              <span id="fz">z^2+\cos\left(t\right)+i\sin\left(t\right)</span>
+            </p>
+          </div>
+        </div>
+
+        <div id="var-sliders"></div>
+      </div>
+
+      <div class="fractal-canvas">
+        <canvas id="webgpu-canvas"></canvas>
+      </div>
+    </div>
   </body>
 </html>

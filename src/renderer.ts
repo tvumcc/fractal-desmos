@@ -31,15 +31,20 @@ export class Renderer {
             throw new Error("WebGPU Not Supported")
         }
 
-        let adapter = await navigator.gpu.requestAdapter() as GPUAdapter
-        this.device = await adapter.requestDevice() as GPUDevice
-        this.canvas_context = this.canvas.getContext("webgpu")
-        this.canvas_texture_format = navigator.gpu.getPreferredCanvasFormat();
+        try {
+            let adapter = await navigator.gpu.requestAdapter() as GPUAdapter
+            this.device = await adapter.requestDevice() as GPUDevice
+            this.canvas_context = this.canvas.getContext("webgpu")
+            this.canvas_texture_format = navigator.gpu.getPreferredCanvasFormat();
 
-        this.canvas_context?.configure({
-            device: this.device,
-            format: this.canvas_texture_format
-        })
+            this.canvas_context?.configure({
+                device: this.device,
+                format: this.canvas_texture_format
+            })
+        } catch {
+            alert("WebGPU is not supported in this browser.")
+            throw new Error("WebGPU is not supported in this browser.")
+        }
     }
 
     init_vertex_buffer() {
