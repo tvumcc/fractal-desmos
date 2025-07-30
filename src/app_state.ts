@@ -286,7 +286,7 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
         uniforms.set([this.pan_real, this.pan_imag], 12)
         let count = 0
         for (let [_, v] of this.variables) {
-            uniforms.set([v.real, v.imag], 10 + 2 * count)
+            uniforms.set([v.real, v.imag], 14 + 2 * count)
             count += 1
         }
     }
