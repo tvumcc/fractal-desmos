@@ -98,6 +98,10 @@
   <body>
     <div class="main-container">
       <div class="side-panel">
+        <div class="title">
+          <h1>Fractal Desmos</h1>
+          <p><a href="https://github.com/tvumcc/fractal-desmos" target="_blank"><img width="30" height="30" src="./assets/github.png"></a></p>
+        </div>
         <div id="info">
           <h2>How To Use</h2>
           <div id="how-to-use">
@@ -110,10 +114,14 @@
             <p><b>z<sub>0</sub></b> is initial value of <b>z</b>, and <b>f(z)</b>
               is function of <b>z</b> applied on each iteration to get the next value of <b>z</b>.
             </p>
-            <p></p>
+            <p>
+              Variables you add in the equations that aren't predefined parameters (listed below)
+              will appear as sliders.              
+            </p>
           </div>
           <h2>Controls</h2>
           <div id="controls">
+            <p>Use these in the fractal viewport:</p>
             <p><b>Left Click</b> and drag to pan</p>
             <p><b>Right Click</b> and drag to set the value of <b>c</b></p>
             <p><b>Scroll</b> to zoom in or out on a location</p>
@@ -121,9 +129,11 @@
           <h2>Parameters</h2>
           <div id="parameters">
             <p>Use these as variables in your equations:</p>
-            <p><b>x</b> the pixel coordinate as a complex number.</p>
-            <p><b>t</b> the current time as a real number.</p>
-            <p><b>c</b> the mouse coordinates as a complex number.</p>
+            <p><b>z</b> iteration variable</p>
+            <p><b>i</b> the square root of -1</p>
+            <p><b>x</b> pixel coordinate</p>
+            <p><b>t</b> current time (imaginary part = 0)</p>
+            <p><b>c</b> mouse coordinates</p>
           </div>
           <h2>Presets</h2>
           <div id="presets">
