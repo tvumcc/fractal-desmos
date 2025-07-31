@@ -107,6 +107,31 @@ html,body {
     width: 100%;
 }
 
+#presets {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.preset-button {
+    margin: 5px;
+    font-size: 11px;
+    font-family: monospace;
+    background-color: #1e2939;
+    color: white;
+    border-radius: 6px;
+    border: 0px;
+    padding: 7px;
+}
+
+.preset-button:hover {
+    transform: scale(1.1);
+}
+
+.preset-button:active {
+    transform: scale(0.9);
+}
+
 /* User Variable Slider Elements */
 
 .var-slider {

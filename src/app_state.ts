@@ -1,7 +1,7 @@
 import * as Expr from "./expression.ts"
 import { TokenType } from "./token.ts";
 
-class UserVar {
+export class UserVar {
     id: number
     real: number
     imag: number
@@ -274,6 +274,19 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
                     user_var_display.innerText = `${v.real} + ${v.imag}i`;
                 }
             });
+        }
+    }
+
+    update_var_sliders() {
+        for (let [k, v] of this.variables) {
+            let user_var_display = document.getElementById(`var-display-${k}`)
+            let user_var_slider_real = document.getElementById(`${k}_real`) as HTMLInputElement
+            let user_var_slider_imag = document.getElementById(`${k}_imag`) as HTMLInputElement
+            if (user_var_display != null) {
+                user_var_display.innerText = `${v.real} + ${v.imag}i`;
+            }
+            user_var_slider_real.value = v.real.toString()
+            user_var_slider_imag.value= v.imag.toString()
         }
     }
 

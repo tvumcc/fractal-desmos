@@ -16,7 +16,7 @@ let renderer: Renderer = new Renderer(canvas)
 await renderer.init_webgpu()
 renderer.init_vertex_buffer()
 
-let state: AppState = new AppState()
+export let state: AppState = new AppState()
 let uniforms: Float32Array<ArrayBuffer> = new Float32Array(14);
 parse(document.getElementById("z0")?.innerText as string, document.getElementById("fz")?.innerText as string)
 
@@ -38,7 +38,6 @@ canvas.addEventListener("mouseup", (event) => {
         state.right_mouse_down = false
 })
 canvas.addEventListener("mousemove", (event) => {
-
     if (state.right_mouse_down) {
         let rect = canvas.getBoundingClientRect()
         state.c_real = (event.x - rect.left) / canvas.width * 2 - 1

@@ -9,7 +9,7 @@
     <script type="module" src="./lib/mathquill.js"></script>
     <script type="module" src="./src/main.ts"></script>
     <script type="module">
-    import { parse } from "./src/main.ts"
+    import { parse, state } from "./src/main.ts"
 
     let MQ = MathQuill.getInterface(2)
     let symbols = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omikron pi rho sigma tau upsilon chi psi omega"
@@ -42,6 +42,57 @@
         }
       }
     })
+
+    class Preset {
+      initial_value
+      equation
+      variables
+
+      constructor(initial_value, equation, variables) {
+        this.initial_value = initial_value;
+        this.equation = equation;
+        if (variables) {
+          this.variables = variables;
+        }
+      }
+    }
+
+    let presets = new Map([
+      ["time-julia-set", new Preset("x", "z^2+a\\left(\\cos\\left(t\\right)+i\\sin\\left(t\\right)\\right)", new Map([["a", [0.9, 0.0]]]))],
+      ["mouse-julia-set", new Preset("ax", "z^2 + c", new Map([["a", [1.0, 0.0]]]))],
+      ["star-julia", new Preset("x", "z^5 + a", new Map([["a", [0.765, 0.535]]]))],
+      ["inverse-julia", new Preset("x", "\\frac{1}{z^2} + a", new Map([["a", [0.016, 0.535]]]))],
+      ["mandelbrot-set", new Preset("0", "z^2 + x", new Map())],
+      ["sine-mandelbrot", new Preset("0", "\\sin\\left(z^2+x\\right)", new Map())],
+      ["moth", new Preset("x", "z^x+z^z", new Map())],
+      ["web", new Preset("x^5", "\\frac{1}{4}\\sin\\left(z^2+\\ln\\left(z\\right)+\\cos\\left(2t\\right)+i\\sin\\left(2t\\right)\\right)", new Map())]
+    ])
+
+    let preset_div = document.getElementById("presets")
+    for (let button of preset_div.children) {
+      button.addEventListener("click", () => set_preset(button.id))
+    }
+
+    function set_preset(preset_str) {
+        if (presets.has(preset_str)) {
+            let preset = presets.get(preset_str)
+
+            parse(preset.initial_value, preset.equation)
+            z0_entry.latex(preset.initial_value)
+            equation_entry.latex(preset.equation)
+
+            if (preset.variables) {
+                for (let [k, v] of preset.variables) {
+                    if (state.variables.has(k)) {
+                        state.variables.get(k).real = v[0]
+                        state.variables.get(k).imag = v[1]
+                        state.update_var_sliders()
+                    }
+                }
+            }
+        }
+    }
+
     </script>
   </head>
   <body>
@@ -59,6 +110,7 @@
             <p><b>z<sub>0</sub></b> is initial value of <b>z</b>, and <b>f(z)</b>
               is function of <b>z</b> applied on each iteration to get the next value of <b>z</b>.
             </p>
+            <p></p>
           </div>
           <h2>Controls</h2>
           <div id="controls">
@@ -75,7 +127,14 @@
           </div>
           <h2>Presets</h2>
           <div id="presets">
-            <p>Coming Soon</p>
+            <button class="preset-button" id="time-julia-set">Time Julia Set</button>
+            <button class="preset-button" id="mouse-julia-set">Mouse Julia Set</button>
+            <button class="preset-button" id="star-julia">Star Julia</button>
+            <button class="preset-button" id="inverse-julia">Inverse Julia</button>
+            <button class="preset-button" id="mandelbrot-set">Mandelbrot Set</button>
+            <button class="preset-button" id="sine-mandelbrot">Sine Mandelbrot</button>
+            <button class="preset-button" id="moth">Moth</button>
+            <button class="preset-button" id="web">Web</button>
           </div>
 
           <hr>
