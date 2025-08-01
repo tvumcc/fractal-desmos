@@ -4,6 +4,46 @@ import {Lexer} from "./lexer.ts"
 import {Parser} from "./parser.ts"
 import {Renderer} from "./renderer.ts"
 
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Hello")
+    let collapse_buttons: HTMLCollection = document.getElementsByClassName("collapse-button") as HTMLCollection
+    for (let element of collapse_buttons) {
+        let collapse_button = element as HTMLButtonElement
+        collapse_button.addEventListener("click", () => {
+            let div: HTMLDivElement = document.getElementById(collapse_button.name) as HTMLDivElement
+            
+            if (div.style.display !== "none") {
+                div.style.display = "none"
+                collapse_button.style.transform = "rotate(0deg)"
+            } else {
+                if (collapse_button.name === "presets") {
+                    div.style.display = "grid"
+                } else {
+                    div.style.display = "block"
+                }
+                collapse_button.style.transform = "rotate(90deg)"
+            }
+        })
+    }
+
+    let panel_collapse_button: HTMLButtonElement = document.getElementById("panel-collapse-button") as HTMLButtonElement
+    panel_collapse_button.addEventListener("click", () => {
+        let side_panel: HTMLDivElement = document.getElementById("side-panel") as HTMLDivElement
+        if (side_panel.style.display !== "none") {
+            side_panel.style.display = "none"
+            panel_collapse_button.style.transform = "rotate(0deg)"
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        } else {
+            side_panel.style.display = "flex"
+            panel_collapse_button.style.transform = "rotate(180deg)"
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+    })
+})
+
+
 let canvas = document.getElementById("webgpu-canvas") as HTMLCanvasElement
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
