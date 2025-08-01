@@ -130,7 +130,12 @@ html,body {
     grid-template-rows: 1fr 1fr;
 }
 
-.preset-button {
+#color-maps {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.preset-button, .color-map-button {
     margin: 5px;
     font-size: 11px;
     font-family: monospace;
@@ -141,11 +146,11 @@ html,body {
     padding: 7px;
 }
 
-.preset-button:hover {
+.preset-button:hover, .color-map-button:hover {
     transform: scale(1.1);
 }
 
-.preset-button:active {
+.preset-button:active, .color-map-button:active {
     transform: scale(0.9);
 }
 

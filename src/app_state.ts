@@ -37,6 +37,8 @@ export class AppState {
     pan_real: number = 0.0
     pan_imag: number = 0.0
 
+    color_map_code: string = "";
+
     set_AST(initial_value_AST: Expr.Expression, equation_AST: Expr.Expression) {
         this.initial_value_AST = initial_value_AST
         this.equation_AST = equation_AST
@@ -166,10 +168,12 @@ fn complex_log(a: vec2f) -> vec2f {
     return complex_ln(a) / log(10);
 }
 
+fn color_map(t: f32) -> vec3f {
+    ${this.color_map_code}
+}
+
 @fragment
 fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
-    var starting_color: vec3f = vec3f(0.0, 0.0, 0.0);
-    var ending_color: vec3f = vec3f(0.4, 0.8, 0.6);
     var aspect_ratio: f32 = uniforms.width / uniforms.height;
 
     var x: vec2f = vec2f(
@@ -183,7 +187,7 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
         z = ${this.get_code(this.equation_AST)};
         var mag2: f32 = dot(z, z);
         if (mag2 > 4.0) {
-            return vec4(2.0 * mix(starting_color, ending_color, (f32(i) + 1.0 - log2(log2(mag2))) / uniforms.iterations), 1.0);
+            return vec4(color_map((f32(i) + 1.0 - log2(log2(mag2))) / uniforms.iterations), 1.0);
         }
     }
 
@@ -302,5 +306,9 @@ fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
             uniforms.set([v.real, v.imag], 14 + 2 * count)
             count += 1
         }
+    }
+
+    set_color_map(color_map_code: string) {
+        this.color_map_code = color_map_code;
     }
 }

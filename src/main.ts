@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function() {
             canvas.height = canvas.clientHeight;
         }
     })
+
 })
 
 
@@ -52,13 +53,45 @@ window.addEventListener("resize", () => {
     canvas.height = canvas.clientHeight;
 })
 
+let color_maps: Map<string, string> = new Map([
+    ["green", "return 2.0 * mix(vec3(0.0, 0.0, 0.0), vec3(0.4, 0.8, 0.6), t);"],
+    ["rainbow", `
+    var c: vec3f = vec3f(5.0 * t, 0.5, 1.0);
+    var K: vec4f = vec4f(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    var p: vec3f = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, vec3f(0.0), vec3f(1.0)), c.y);
+    `],
+    ["viridis", `
+        var i: f32 = t * 2.0;
+        var c0: vec3f = vec3f(0.274344,0.004462,0.331359);
+        var c1: vec3f = vec3f(0.108915,1.397291,1.388110);
+        var c2: vec3f = vec3f(-0.319631,0.243490,0.156419);
+        var c3: vec3f = vec3f(-4.629188,-5.882803,-19.646115);
+        var c4: vec3f = vec3f(6.181719,14.388598,57.442181);
+        var c5: vec3f = vec3f(4.876952,-13.955112,-66.125783);
+        var c6: vec3f = vec3f(-5.513165,4.709245,26.582180);
+        return c0+i*(c1+i*(c2+i*(c3+i*(c4+i*(c5+i*c6))))); 
+    `],
+])
+
 let renderer: Renderer = new Renderer(canvas)
 await renderer.init_webgpu()
 renderer.init_vertex_buffer()
 
 export let state: AppState = new AppState()
+state.set_color_map(color_maps.get("rainbow")!)
 let uniforms: Float32Array<ArrayBuffer> = new Float32Array(14);
 parse(document.getElementById("z0")?.innerText as string, document.getElementById("fz")?.innerText as string)
+
+let color_map_buttons: HTMLCollection = document.getElementsByClassName("color-map-button") as HTMLCollection
+for (let button of color_map_buttons) {
+    let color_map_button = button as HTMLButtonElement
+    color_map_button.addEventListener("click", () => {
+        state.set_color_map(color_maps.get(color_map_button.id)!)
+        renderer.set_shader_code(state.get_shader_code())
+        renderer.set_uniforms(uniforms)
+    })
+}
 
 canvas.addEventListener("contextmenu", event => event.preventDefault())
 canvas.addEventListener("mousedown", (event) => {
@@ -111,7 +144,6 @@ canvas.addEventListener("wheel", (event) => {
     state.pan_real = (old_zoom / state.zoom) * (state.pan_real + mouse_x) - mouse_x
     state.pan_imag = (old_zoom / state.zoom) * (state.pan_imag + mouse_y) - mouse_y
 })
-
 
 export function parse(z0: string, equation: string) {
     let parameters: Map<string, string> = new Map([
