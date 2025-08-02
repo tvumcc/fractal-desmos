@@ -1,5 +1,3 @@
-// Currently not supporting implicit multiplication
-
 expression = term
 term       = product ((PLUS | MINUS) term)?
 product    = unary (DOT product | (quotient)+)?

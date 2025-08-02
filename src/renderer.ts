@@ -27,11 +27,11 @@ export class Renderer {
     }
 
     async init_webgpu() {
-        if (!navigator.gpu) {
-            throw new Error("WebGPU Not Supported")
-        }
-
         try {
+            if (!navigator.gpu) {
+                throw new Error("WebGPU Not Supported")
+            }
+
             let adapter = await navigator.gpu.requestAdapter() as GPUAdapter
             this.device = await adapter.requestDevice() as GPUDevice
             this.canvas_context = this.canvas.getContext("webgpu")
@@ -42,7 +42,7 @@ export class Renderer {
                 format: this.canvas_texture_format
             })
         } catch {
-            alert("WebGPU is not supported in this browser.")
+            alert("WebGPU is not supported in this browser.\nSee https://github.com/gpuweb/gpuweb/wiki/Implementation-Status\n")
             throw new Error("WebGPU is not supported in this browser.")
         }
     }

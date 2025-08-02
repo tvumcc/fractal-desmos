@@ -4,53 +4,48 @@ import {Lexer} from "./lexer.ts"
 import {Parser} from "./parser.ts"
 import {Renderer} from "./renderer.ts"
 
-document.addEventListener("DOMContentLoaded", function() {
-    console.log("Hello")
-    let collapse_buttons: HTMLCollection = document.getElementsByClassName("collapse-button") as HTMLCollection
-    for (let element of collapse_buttons) {
-        let collapse_button = element as HTMLButtonElement
-        collapse_button.addEventListener("click", () => {
-            let div: HTMLDivElement = document.getElementById(collapse_button.name) as HTMLDivElement
-            
-            if (div.style.display !== "none") {
-                div.style.display = "none"
-                collapse_button.style.transform = "rotate(0deg)"
-            } else {
-                if (collapse_button.name === "presets") {
-                    div.style.display = "grid"
-                } else {
-                    div.style.display = "block"
-                }
-                collapse_button.style.transform = "rotate(90deg)"
-            }
-        })
-    }
-
-    let panel_collapse_button: HTMLButtonElement = document.getElementById("panel-collapse-button") as HTMLButtonElement
-    panel_collapse_button.addEventListener("click", () => {
-        let side_panel: HTMLDivElement = document.getElementById("side-panel") as HTMLDivElement
-        if (side_panel.style.display !== "none") {
-            side_panel.style.display = "none"
-            panel_collapse_button.style.transform = "rotate(0deg)"
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
-        } else {
-            side_panel.style.display = "flex"
-            panel_collapse_button.style.transform = "rotate(180deg)"
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
-        }
-    })
-
-})
-
-
-let canvas = document.getElementById("webgpu-canvas") as HTMLCanvasElement
+let canvas: HTMLCanvasElement = document.getElementById("webgpu-canvas") as HTMLCanvasElement
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 window.addEventListener("resize", () => {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
+})
+
+let collapse_buttons: HTMLCollection = document.getElementsByClassName("collapse-button") as HTMLCollection
+for (let element of collapse_buttons) {
+    let collapse_button = element as HTMLButtonElement
+    collapse_button.addEventListener("click", () => {
+        let div: HTMLDivElement = document.getElementById(collapse_button.name) as HTMLDivElement
+        
+        if (div.style.display !== "none") {
+            div.style.display = "none"
+            collapse_button.style.transform = "rotate(0deg)"
+        } else {
+            if (collapse_button.name === "presets" || collapse_button.name == "color-maps") {
+                div.style.display = "grid"
+            } else {
+                div.style.display = "block"
+            }
+            collapse_button.style.transform = "rotate(90deg)"
+        }
+    })
+}
+
+let panel_collapse_button: HTMLButtonElement = document.getElementById("panel-collapse-button") as HTMLButtonElement
+panel_collapse_button.addEventListener("click", () => {
+    let side_panel: HTMLDivElement = document.getElementById("side-panel") as HTMLDivElement
+    if (side_panel.style.display !== "none") {
+        side_panel.style.display = "none"
+        panel_collapse_button.style.transform = "rotate(0deg)"
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+    } else {
+        side_panel.style.display = "flex"
+        panel_collapse_button.style.transform = "rotate(180deg)"
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+    }
 })
 
 let color_maps: Map<string, string> = new Map([
@@ -74,15 +69,6 @@ let color_maps: Map<string, string> = new Map([
     `],
 ])
 
-let renderer: Renderer = new Renderer(canvas)
-await renderer.init_webgpu()
-renderer.init_vertex_buffer()
-
-export let state: AppState = new AppState()
-state.set_color_map(color_maps.get("rainbow")!)
-let uniforms: Float32Array<ArrayBuffer> = new Float32Array(14);
-parse(document.getElementById("z0")?.innerText as string, document.getElementById("fz")?.innerText as string)
-
 let color_map_buttons: HTMLCollection = document.getElementsByClassName("color-map-button") as HTMLCollection
 for (let button of color_map_buttons) {
     let color_map_button = button as HTMLButtonElement
@@ -92,6 +78,15 @@ for (let button of color_map_buttons) {
         renderer.set_uniforms(uniforms)
     })
 }
+
+let renderer: Renderer = new Renderer(canvas)
+await renderer.init_webgpu()
+renderer.init_vertex_buffer()
+
+export let state: AppState = new AppState()
+state.set_color_map(color_maps.get("rainbow")!)
+let uniforms: Float32Array<ArrayBuffer> = new Float32Array(14);
+parse(document.getElementById("z0")?.innerText as string, document.getElementById("fz")?.innerText as string)
 
 canvas.addEventListener("contextmenu", event => event.preventDefault())
 canvas.addEventListener("mousedown", (event) => {
@@ -183,7 +178,7 @@ export function parse(z0: string, equation: string) {
 }
 
 function render_loop() {
-    uniforms.set([canvas.width, canvas.height], 8) // Canvas Dimensions
+    uniforms.set([canvas.width, canvas.height], 8)
     state.update_uniform_array(uniforms)
     renderer.update_uniform_buffer(uniforms)
     renderer.render()

@@ -15,12 +15,6 @@
     scrollbar-color: gray #171717;
 }
 
-#var-sliders {
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: gray #171717;
-}
-
 .fractal-canvas {
     flex: 4;
     position: relative;

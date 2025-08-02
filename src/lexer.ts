@@ -129,8 +129,7 @@ export class Lexer {
                 } break;
 
                 default: {
-                    // Real and Imaginary:
-                    if (this.peek().match("[0-9]")) {
+                    if (this.peek().match("[0-9]")) { // Reals
                         let literal: string = ""
                         while (this.peek().match("[0-9]")) {
                             literal += this.peek()
@@ -146,7 +145,7 @@ export class Lexer {
                         }
 
                         this.add_token(new Token(TokenType.REAL, literal))
-                    } else if (this.peek().match("[a-zA-z]")) {
+                    } else if (this.peek().match("[a-zA-z]")) { // Identifiers and Parameters
                         let identifier: string = this.peek()
                         this.advance()
 
